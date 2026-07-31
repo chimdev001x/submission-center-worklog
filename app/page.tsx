@@ -7,6 +7,8 @@ import { DashboardView } from "./components/DashboardView";
 import { DayControlView } from "./components/DayControlView";
 import { TodoView } from "./components/TodoView";
 import { AppHeader } from "./components/AppHeader";
+import { AuthScreen } from "./components/AuthScreen";
+import { AuthUser, initializeAuth, logout } from "./auth-utils";
 
 const STATUSES = ["Open", "In Progress", "Passed", "Fail", "Stopper", "Cancel", "Done"] as const;
 const ACTIVITIES = ["Retest", "Open", "Meeting", "Create Testcase", "Smoke Test", "E2E", "Review"] as const;
@@ -51,6 +53,8 @@ const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth()
 const localDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 export default function Home() {
+  const [authReady, setAuthReady] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [view, setView] = useState<View>("dashboard");
   const [month, setMonth] = useState(() => new Date(2026, 6, 1));
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -85,6 +89,14 @@ export default function Home() {
   const [editingTodoPriority, setEditingTodoPriority] = useState<TodoPriority>("Medium");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  useEffect(() => {
+    initializeAuth().then((sessionUser) => {
+      setUser(sessionUser);
+      if (sessionUser?.level === 1) setView("dashboard");
+      setAuthReady(true);
+    });
+  }, []);
+
   const key = monthKey(month);
   const totalDays = daysInMonth(month);
 
@@ -107,16 +119,20 @@ export default function Home() {
   }, [data, hydrated, key]);
 
   useEffect(() => {
-    const stored = localStorage.getItem("submission-center:todos");
-    const parsed = stored ? JSON.parse(stored) as TodoItem[] : [];
+    if (!user) return;
+    const storageKey = user.level === 9 ? "submission-center:todos" : `submission-center:todos:${user.id}`;
+    const accountStored = localStorage.getItem(storageKey);
+    const parsed = accountStored ? JSON.parse(accountStored) as TodoItem[] : [];
     setTodos(parsed);
     setTodosHydrated(true);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!todosHydrated) return;
-    localStorage.setItem("submission-center:todos", JSON.stringify(todos));
-  }, [todos, todosHydrated]);
+    if (!user) return;
+    const storageKey = user.level === 9 ? "submission-center:todos" : `submission-center:todos:${user.id}`;
+    localStorage.setItem(storageKey, JSON.stringify(todos));
+  }, [todos, todosHydrated, user]);
 
   useEffect(() => {
     if (!todosHydrated) return;
@@ -378,19 +394,38 @@ export default function Home() {
     }
   };
 
+  const handleAuthenticated = (nextUser: AuthUser) => {
+    setTodosHydrated(false);
+    setUser(nextUser);
+    setView("dashboard");
+  };
+
+  const handleLogout = () => {
+    logout();
+    setMobileMenuOpen(false);
+    setTodosHydrated(false);
+    setTodos([]);
+    setUser(null);
+  };
+
+  if (!authReady) return <main className="auth-loading" aria-live="polite">Loading workspace…</main>;
+  if (!user) return <AuthScreen onAuthenticated={handleAuthenticated} />;
+
+  const isAdmin = user.level >= 9;
+
   return (
     <main className="app-shell">
-      <AppHeader model={{ view, setView, mobileMenuOpen, setMobileMenuOpen, key, changeMonth, saved, openImport, openExport }} />
+      <AppHeader model={{ view, setView, mobileMenuOpen, setMobileMenuOpen, key, changeMonth, saved, openImport, openExport, user, onLogout: handleLogout }} />
 
       {view === "dashboard" ? (
-        <DashboardView model={{ monthLabel, counts, STATUSES, statusClass, setView, dailyTotals, data, setSelectedDay, maxDaily, todoCounts, dashboardTodos, monthlyTodos, overdueLabel }} />
-      ) : view === "days" ? (
+        <DashboardView model={{ monthLabel, counts, STATUSES, statusClass, setView, dailyTotals, data, setSelectedDay, maxDaily, todoCounts, dashboardTodos, monthlyTodos, overdueLabel, todoOnly: !isAdmin }} />
+      ) : isAdmin && view === "days" ? (
         <DayControlView model={{ monthLabel, selectedDay, current, updateDay, totalDays, data, dailyTotals, maxDaily, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, removeTask }} />
       ) : (
         <TodoView model={{ monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, monthlyTodos, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel }} />
       )}
 
-      {importOpen && (
+      {isAdmin && importOpen && (
         <div className="export-backdrop" role="presentation" onMouseDown={(event) => {
           if (event.currentTarget === event.target && !importing) setImportOpen(false);
         }}>
@@ -488,7 +523,7 @@ export default function Home() {
         </div>
       )}
 
-      {exportOpen && (
+      {isAdmin && exportOpen && (
         <div className="export-backdrop" role="presentation" onMouseDown={(event) => {
           if (event.currentTarget === event.target && !exporting) setExportOpen(false);
         }}>

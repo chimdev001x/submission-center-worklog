@@ -1,5 +1,6 @@
 export function AppHeader({ model }: { model: any }) {
-  const { view, setView, mobileMenuOpen, setMobileMenuOpen, key, changeMonth, saved, openImport, openExport } = model;
+  const { view, setView, mobileMenuOpen, setMobileMenuOpen, key, changeMonth, saved, openImport, openExport, user, onLogout } = model;
+  const isAdmin = user.level >= 9;
   return (
     <header className="topbar">
     <div className="brand-lockup">
@@ -15,9 +16,9 @@ export function AppHeader({ model }: { model: any }) {
     </button>
     </nav>
     <nav className="secondary-nav" aria-label="Workspace navigation">
-    <button className={view === "days" ? "active" : ""} onClick={() => setView("days")}>
+    {isAdmin && <button className={view === "days" ? "active" : ""} onClick={() => setView("days")}>
     Day Control
-    </button>
+    </button>}
     <button className={view === "todos" ? "active" : ""} onClick={() => setView("todos")}>
     To Do List
     </button>
@@ -36,7 +37,7 @@ export function AppHeader({ model }: { model: any }) {
     <aside className="mobile-nav-panel" id="mobile-navigation">
     <nav aria-label="Mobile navigation">
     <button className={view === "dashboard" ? "active" : ""} onClick={() => { setView("dashboard"); setMobileMenuOpen(false); }}>Dashboard</button>
-    <button className={view === "days" ? "active" : ""} onClick={() => { setView("days"); setMobileMenuOpen(false); }}>Day Control</button>
+    {isAdmin && <button className={view === "days" ? "active" : ""} onClick={() => { setView("days"); setMobileMenuOpen(false); }}>Day Control</button>}
     <button className={view === "todos" ? "active" : ""} onClick={() => { setView("todos"); setMobileMenuOpen(false); }}>To Do List</button>
     </nav>
     </aside>
@@ -46,7 +47,7 @@ export function AppHeader({ model }: { model: any }) {
     <span>Month</span>
     <input type="month" value={key} onChange={(event) => changeMonth(event.target.value)} />
     </label>
-    {view !== "todos" && <>
+    {isAdmin && view !== "todos" && <>
     <span className={`save-state ${saved ? "is-saved" : ""}`}>
     <i aria-hidden="true" />{saved ? "Saved on this device" : "Saving…"}
     </span>
@@ -59,8 +60,11 @@ export function AppHeader({ model }: { model: any }) {
     </button>
     </div>
     </>}
+    <div className="account-control">
+    <span><strong>{user.displayName}</strong><small>Level {user.level}</small></span>
+    <button type="button" onClick={onLogout}>Logout</button>
+    </div>
     </div>
     </header>
   );
 }
-

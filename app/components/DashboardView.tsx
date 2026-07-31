@@ -1,7 +1,8 @@
 export function DashboardView({ model }: { model: any }) {
-  const { monthLabel, counts, STATUSES, statusClass, setView, dailyTotals, data, setSelectedDay, maxDaily, todoCounts, dashboardTodos, monthlyTodos, overdueLabel } = model;
+  const { monthLabel, counts, STATUSES, statusClass, setView, dailyTotals, data, setSelectedDay, maxDaily, todoCounts, dashboardTodos, monthlyTodos, overdueLabel, todoOnly = false } = model;
   return (
-    <div className="page-view dashboard-view">
+    <div className={`page-view dashboard-view ${todoOnly ? "is-todo-only" : ""}`}>
+    {!todoOnly && <>
     <section className="page-intro">
     <div>
     <p className="section-kicker">{monthLabel}</p>
@@ -12,16 +13,17 @@ export function DashboardView({ model }: { model: any }) {
     <span>Total items</span><strong>{counts.total}</strong>
     </div>
     </section>
+    </>}
     
-    <section className="status-ledger" aria-label="Status summary">
+    {!todoOnly && <section className="status-ledger" aria-label="Status summary">
     {STATUSES.map((status) => (
     <div className={`status-count ${statusClass[status]}`} key={status}>
     <span>{status}</span><strong>{counts[status]}</strong>
     </div>
     ))}
-    </section>
+    </section>}
     
-    <section className="month-chart" aria-labelledby="month-chart-title">
+    {!todoOnly && <section className="month-chart" aria-labelledby="month-chart-title">
     <div className="chart-heading">
     <div>
     <p className="section-kicker">DAILY VOLUME</p>
@@ -42,7 +44,7 @@ export function DashboardView({ model }: { model: any }) {
     </button>
     ))}
     </div>
-    </section>
+    </section>}
     
     <section className="dashboard-todos" aria-labelledby="dashboard-todos-title">
     <div className="chart-heading dashboard-todos-heading">
