@@ -40,6 +40,19 @@ export const register = async (displayName: string, email: string, password: str
   return profileFor(data.user.id, data.user.email);
 };
 
+export const resendConfirmation = async (email: string): Promise<void> => {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) throw new Error("กรุณากรอกอีเมลก่อนส่งลิงก์ยืนยันอีกครั้ง");
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: normalizedEmail,
+    options: {
+      emailRedirectTo: typeof window === "undefined" ? undefined : window.location.origin,
+    },
+  });
+  if (error) throw error;
+};
+
 export const logout = async () => { await supabase.auth.signOut(); };
 
 export const loadMonthData = async <T>(userId: string, monthKey: string): Promise<T | null> => {

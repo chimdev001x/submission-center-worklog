@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { AuthUser, login, register } from "../auth-utils";
+import { AuthUser, login, register, resendConfirmation } from "../auth-utils";
 
 export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -7,12 +7,14 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUs
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
     setError("");
+    setNotice("");
     try {
       const user = mode === "login"
         ? await login(email, password)
@@ -20,6 +22,20 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUs
       onAuthenticated(user);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "ไม่สามารถเข้าสู่ระบบได้");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const resend = async () => {
+    setSubmitting(true);
+    setError("");
+    setNotice("");
+    try {
+      await resendConfirmation(email);
+      setNotice("ส่งอีเมลยืนยันใหม่แล้ว กรุณาเปิดลิงก์ล่าสุดในกล่องอีเมล");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "ไม่สามารถส่งอีเมลยืนยันใหม่ได้");
     } finally {
       setSubmitting(false);
     }
@@ -49,7 +65,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUs
           <label><span>Email</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
           <label><span>Password</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "register" ? 8 : undefined} required /></label>
           {error && <p className="auth-error" role="alert">{error}</p>}
+          {notice && <p className="auth-notice" role="status">{notice}</p>}
           <button className="auth-submit" type="submit" disabled={submitting}>{submitting ? "Please wait…" : mode === "login" ? "Login →" : "Create Level 1 account →"}</button>
+          {mode === "login" && <button className="auth-resend" type="button" disabled={submitting} onClick={resend}>Resend confirmation email</button>}
         </form>
       </section>
     </main>
