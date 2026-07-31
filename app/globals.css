@@ -30,11 +30,12 @@ button:disabled, select:disabled { cursor: not-allowed; }
 
 .app-shell { width: min(1640px, 100%); margin: 0 auto; padding: 0 38px 28px; }
 .topbar {
-  min-height: 98px;
-  display: flex;
+  min-height: 130px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 78px 52px;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  column-gap: 24px;
   border-bottom: 1px solid var(--line-strong);
 }
 .brand-lockup { display: flex; align-items: center; gap: 14px; }
@@ -57,8 +58,17 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
   font-weight: 700;
   letter-spacing: .16em;
 }
-.topbar-actions { display: flex; align-items: center; gap: 24px; }
+.topbar-actions {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border-top: 1px solid var(--line);
+}
 .primary-nav {
+  justify-self: end;
   align-self: stretch;
   display: flex;
   align-items: stretch;
@@ -100,6 +110,7 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .save-state i { width: 7px; height: 7px; border-radius: 50%; background: #d19a4b; }
 .save-state.is-saved i { background: #5e775c; }
 .export-trigger {
+  margin-left: auto;
   min-height: 35px;
   display: inline-flex;
   align-items: center;
@@ -483,8 +494,10 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
 @media (max-width: 1120px) {
-  .topbar { flex-wrap: wrap; padding: 18px 0 0; }
-  .primary-nav { order: 3; width: 100%; min-height: 45px; justify-content: center; }
+  .topbar { grid-template-columns: 1fr; grid-template-rows: auto 45px 52px; padding: 18px 0 0; }
+  .brand-lockup { grid-row: 1; }
+  .primary-nav { grid-row: 2; grid-column: 1; width: 100%; min-height: 45px; justify-self: stretch; justify-content: center; border-top: 1px solid var(--line); }
+  .topbar-actions { grid-row: 3; grid-column: 1; }
   .overview { grid-template-columns: 1fr 160px; }
   .status-ledger { grid-column: 1 / -1; border-top: 1px solid var(--line); }
   .monthly-workspace { grid-template-columns: 1fr; }
@@ -549,21 +562,21 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .app-shell { padding: 0 16px 22px; }
   .topbar {
     min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 44px 52px;
     align-items: center;
-    gap: 15px 18px;
+    gap: 0;
     padding: 18px 0 0;
   }
   .brand-mark, .save-state { display: none; }
   .brand-lockup { min-width: 0; }
   .brand-lockup h1 { font-size: 24px; white-space: nowrap; }
   .eyebrow { margin-bottom: 4px; font-size: 8px; }
-  .topbar-actions { gap: 8px; }
+  .topbar-actions { grid-row: 3; grid-column: 1; gap: 8px; }
   .export-trigger { padding-inline: 9px; }
   .primary-nav {
+    grid-row: 2;
     grid-column: 1 / -1;
-    order: initial;
     min-height: 44px;
     width: 100%;
     justify-content: flex-start;
