@@ -497,7 +497,6 @@ export default function Home() {
                           checked={current.workMode === mode}
                           onChange={() => updateDay(selectedDay, { workMode: mode })}
                         />
-                        <span className="choice-box" aria-hidden="true" />
                         <span>{mode}</span>
                       </label>
                     ))}
@@ -620,7 +619,6 @@ export default function Home() {
                   {TODO_PRIORITIES.map((priority) => (
                     <label key={priority} className={`priority-${priority.toLowerCase()}`}>
                       <input type="radio" name="todo-priority" value={priority} checked={todoPriority === priority} onChange={() => setTodoPriority(priority)} />
-                      <span aria-hidden="true" />
                       <strong>{priority}</strong>
                     </label>
                   ))}
