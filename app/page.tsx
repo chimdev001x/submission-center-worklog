@@ -19,7 +19,7 @@ type Task = { id: string; activity: Activity; link: string; results: string; sta
 type DayRecord = { enabled: boolean; workMode: WorkMode; tasks: Task[] };
 type MonthData = Record<number, DayRecord>;
 type TodoPriority = (typeof TODO_PRIORITIES)[number];
-type TodoItem = { id: string; title: string; dueDate: string; priority: TodoPriority; completed: boolean; createdAt: number };
+type TodoItem = { id: string; title: string; dueDate: string; originalDueDate?: string; carriedAt?: number; priority: TodoPriority; completed: boolean; createdAt: number };
 
 const statusClass: Record<string, string> = {
   Open: "status-open",
@@ -43,6 +43,7 @@ const createMonth = (days: number): MonthData =>
 
 const monthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+const localDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 export default function Home() {
   const [view, setView] = useState<View>("dashboard");
@@ -70,9 +71,10 @@ export default function Home() {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [todosHydrated, setTodosHydrated] = useState(false);
   const [todoTitle, setTodoTitle] = useState("");
-  const [todoDueDate, setTodoDueDate] = useState("");
+  const [selectedTodoDay, setSelectedTodoDay] = useState(() => new Date().getDate());
   const [todoPriority, setTodoPriority] = useState<TodoPriority>("Medium");
   const [todoFilter, setTodoFilter] = useState<"all" | "open" | "done">("all");
+  const [todoClock, setTodoClock] = useState(() => Date.now());
 
   const key = monthKey(month);
   const totalDays = daysInMonth(month);
@@ -97,7 +99,8 @@ export default function Home() {
 
   useEffect(() => {
     const stored = localStorage.getItem("submission-center:todos");
-    setTodos(stored ? JSON.parse(stored) : []);
+    const parsed = stored ? JSON.parse(stored) as TodoItem[] : [];
+    setTodos(parsed);
     setTodosHydrated(true);
   }, []);
 
@@ -105,6 +108,26 @@ export default function Home() {
     if (!todosHydrated) return;
     localStorage.setItem("submission-center:todos", JSON.stringify(todos));
   }, [todos, todosHydrated]);
+
+  useEffect(() => {
+    if (!todosHydrated) return;
+    const carryOverdueTasks = () => {
+      setTodoClock(Date.now());
+      const today = localDateKey(new Date());
+      setTodos((currentTodos) => {
+        let changed = false;
+        const next = currentTodos.map((todo) => {
+          if (todo.completed || !todo.dueDate || todo.dueDate >= today) return todo;
+          changed = true;
+          return { ...todo, originalDueDate: todo.originalDueDate || todo.dueDate, dueDate: today, carriedAt: Date.now() };
+        });
+        return changed ? next : currentTodos;
+      });
+    };
+    carryOverdueTasks();
+    const timer = window.setInterval(carryOverdueTasks, 60_000);
+    return () => window.clearInterval(timer);
+  }, [todosHydrated]);
 
   const counts = useMemo(() => {
     const next = Object.fromEntries(STATUSES.map((status) => [status, 0])) as Record<(typeof STATUSES)[number], number>;
@@ -130,6 +153,7 @@ export default function Home() {
   const current = selectedDay ? data[selectedDay] : null;
   const monthLabel = month.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const fullDate = selectedDay ? new Date(month.getFullYear(), month.getMonth(), selectedDay) : null;
+  const selectedTodoDate = `${key}-${String(Math.min(selectedTodoDay, totalDays)).padStart(2, "0")}`;
 
   const resolvedImportRows = useMemo(() => importRows.map((row) => {
     const dateMatchesMonth = row.date ? row.date.slice(0, 7) === key : false;
@@ -144,14 +168,19 @@ export default function Home() {
   }), [importDay, importMode, importRows, key, monthLabel, totalDays]);
 
   const validImportRows = resolvedImportRows.filter((item) => !item.issue && item.targetDay);
+  const monthlyTodos = useMemo(() => todos.filter((todo) => todo.dueDate.startsWith(key)), [key, todos]);
   const todoCounts = useMemo(() => ({
-    total: todos.length,
-    open: todos.filter((todo) => !todo.completed).length,
-    done: todos.filter((todo) => todo.completed).length,
-  }), [todos]);
+    total: monthlyTodos.length,
+    open: monthlyTodos.filter((todo) => !todo.completed).length,
+    done: monthlyTodos.filter((todo) => todo.completed).length,
+  }), [monthlyTodos]);
+  const todoDailyTotals = useMemo(() => Array.from({ length: totalDays }, (_, index) =>
+    monthlyTodos.filter((todo) => Number(todo.dueDate.slice(-2)) === index + 1).length
+  ), [monthlyTodos, totalDays]);
   const visibleTodos = useMemo(() => todos
+    .filter((todo) => todo.dueDate === selectedTodoDate)
     .filter((todo) => todoFilter === "all" || (todoFilter === "done" ? todo.completed : !todo.completed))
-    .sort((a, b) => Number(a.completed) - Number(b.completed) || a.createdAt - b.createdAt), [todoFilter, todos]);
+    .sort((a, b) => Number(a.completed) - Number(b.completed) || a.createdAt - b.createdAt), [selectedTodoDate, todoFilter, todos]);
 
   const updateDay = (day: number, patch: Partial<DayRecord>) =>
     setData((value) => ({ ...value, [day]: { ...value[day], ...patch } }));
@@ -172,6 +201,7 @@ export default function Home() {
     const [year, monthNumber] = value.split("-").map(Number);
     setHydrated(false);
     setMonth(new Date(year, monthNumber - 1, 1));
+    setSelectedTodoDay(1);
   };
 
   const addRows = () => {
@@ -259,11 +289,18 @@ export default function Home() {
     const title = todoTitle.trim();
     if (!title) return;
     setTodos((currentTodos) => [...currentTodos, {
-      id: crypto.randomUUID(), title, dueDate: todoDueDate, priority: todoPriority, completed: false, createdAt: Date.now(),
+      id: crypto.randomUUID(), title, dueDate: selectedTodoDate, priority: todoPriority, completed: false, createdAt: Date.now(),
     }]);
     setTodoTitle("");
-    setTodoDueDate("");
     setTodoPriority("Medium");
+  };
+
+  const overdueLabel = (todo: TodoItem) => {
+    if (!todo.originalDueDate) return "";
+    const elapsedHours = Math.max(0, Math.floor((todoClock - new Date(`${todo.originalDueDate}T00:00:00`).getTime()) / 3_600_000));
+    const days = Math.floor(elapsedHours / 24);
+    const hours = elapsedHours % 24;
+    return `Late by ${days} day${days === 1 ? "" : "s"} ${hours} hour${hours === 1 ? "" : "s"}`;
   };
 
   const runExport = async (format: "excel" | "pdf") => {
@@ -293,7 +330,7 @@ export default function Home() {
 
   return (
     <main className="app-shell">
-      <header className={`topbar ${view === "todos" ? "is-compact" : ""}`}>
+      <header className="topbar">
         <div className="brand-lockup">
           <span className="brand-mark">SC</span>
           <div>
@@ -312,23 +349,25 @@ export default function Home() {
             To Do List
           </button>
         </nav>
-        {view !== "todos" && <div className="topbar-actions">
+        <div className="topbar-actions">
           <label className="month-control">
             <span>Month</span>
             <input type="month" value={key} onChange={(event) => changeMonth(event.target.value)} />
           </label>
-          <span className={`save-state ${saved ? "is-saved" : ""}`}>
-            <i aria-hidden="true" />{saved ? "Saved on this device" : "Saving…"}
-          </span>
-          <div className="file-actions">
-            <button className="import-trigger" type="button" onClick={openImport}>
-              <span aria-hidden="true">↑</span> Import
-            </button>
-            <button className="export-trigger" type="button" onClick={openExport}>
-              <span aria-hidden="true">↓</span> Export
-            </button>
-          </div>
-        </div>}
+          {view !== "todos" && <>
+            <span className={`save-state ${saved ? "is-saved" : ""}`}>
+              <i aria-hidden="true" />{saved ? "Saved on this device" : "Saving…"}
+            </span>
+            <div className="file-actions">
+              <button className="import-trigger" type="button" onClick={openImport}>
+                <span aria-hidden="true">↑</span> Import
+              </button>
+              <button className="export-trigger" type="button" onClick={openExport}>
+                <span aria-hidden="true">↓</span> Export
+              </button>
+            </div>
+          </>}
+        </div>
       </header>
 
       {view === "dashboard" ? (
@@ -526,9 +565,9 @@ export default function Home() {
         <div className="page-view todo-view">
           <section className="todo-intro">
             <div>
-              <p className="section-kicker">PERSONAL TASKS</p>
+              <p className="section-kicker">{monthLabel}</p>
               <h2>To Do List</h2>
-              <p>รวบรวมงานที่ต้องทำ ติดตามวันครบกำหนด และปิดงานเมื่อเสร็จ</p>
+              <p>เลือกวันที่ทำงาน เพิ่มรายการ และติดตามงานที่ถูกเลื่อนไปวันถัดไปโดยอัตโนมัติ</p>
             </div>
             <div className="todo-summary" aria-label="To do summary">
               <div><span>All</span><strong>{todoCounts.total}</strong></div>
@@ -537,19 +576,37 @@ export default function Home() {
             </div>
           </section>
 
+          <section className="todo-calendar" aria-labelledby="todo-calendar-title">
+            <div className="todo-calendar-heading">
+              <div><p className="section-kicker">TASK SCHEDULE</p><h2 id="todo-calendar-title">Choose a task day</h2></div>
+              <p>งานที่เลยกำหนดและยังไม่เสร็จจะย้ายไปวันปัจจุบัน พร้อมซ่อนจากวันเดิม</p>
+            </div>
+            <div className="todo-day-grid" aria-label={`Task days in ${monthLabel}`}>
+              {Array.from({ length: totalDays }, (_, index) => {
+                const day = index + 1;
+                const isSelected = selectedTodoDay === day;
+                const total = todoDailyTotals[index];
+                const open = monthlyTodos.filter((todo) => Number(todo.dueDate.slice(-2)) === day && !todo.completed).length;
+                return (
+                  <button key={day} type="button" aria-pressed={isSelected} className={isSelected ? "is-selected" : ""} onClick={() => setSelectedTodoDay(day)}>
+                    <span>{String(day).padStart(2, "0")}</span>
+                    <small>{total} item{total === 1 ? "" : "s"}{open ? ` • ${open} open` : ""}</small>
+                    <i aria-hidden="true"><b style={{ width: `${total ? Math.max(14, (total / Math.max(...todoDailyTotals, 1)) * 100) : 0}%` }} /></i>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="todo-compose" aria-labelledby="todo-compose-title">
             <div>
               <p className="section-kicker">NEW ITEM</p>
-              <h2 id="todo-compose-title">What needs to be done?</h2>
+              <h2 id="todo-compose-title">Add task for {new Date(`${selectedTodoDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "long" })}</h2>
             </div>
             <form onSubmit={(event) => { event.preventDefault(); addTodo(); }}>
               <label className="todo-title-field">
                 <span>Task</span>
                 <input value={todoTitle} onChange={(event) => setTodoTitle(event.target.value)} placeholder="Write a clear next action…" autoComplete="off" />
-              </label>
-              <label>
-                <span>Due date</span>
-                <input type="date" value={todoDueDate} onInput={(event) => setTodoDueDate(event.currentTarget.value)} />
               </label>
               <label>
                 <span>Priority</span>
@@ -586,7 +643,8 @@ export default function Home() {
                       <strong>{todo.title}</strong>
                       <div>
                         <span className={`todo-priority priority-${todo.priority.toLowerCase()}`}>{todo.priority}</span>
-                        <span>{todo.dueDate ? new Date(`${todo.dueDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }) : "No due date"}</span>
+                        <span>{new Date(`${todo.dueDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                        {todo.originalDueDate && <span className="todo-overdue">{overdueLabel(todo)} • moved from {todo.originalDueDate}</span>}
                       </div>
                     </div>
                     <button className="todo-delete" type="button" onClick={() => setTodos((items) => items.filter((item) => item.id !== todo.id))} aria-label={`Delete ${todo.title}`}>×</button>
