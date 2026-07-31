@@ -1,5 +1,5 @@
 export function TodoView({ model }: { model: any }) {
-  const { monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, monthlyTodos, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel } = model;
+  const { monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, todoDailyOpenTotals, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel } = model;
   return (
     <div className="page-view todo-view">
     <section className="todo-intro">
@@ -18,7 +18,7 @@ export function TodoView({ model }: { model: any }) {
     <section className="todo-calendar" aria-labelledby="todo-calendar-title">
     <div className="todo-calendar-heading">
     <div><p className="section-kicker">TASK SCHEDULE</p><h2 id="todo-calendar-title">Choose a task day</h2></div>
-    <p>งานที่เลยกำหนดและยังไม่เสร็จจะย้ายไปวันปัจจุบัน พร้อมซ่อนจากวันเดิม</p>
+    <p>งานที่เลยกำหนดจะทำต่อในวันปัจจุบัน และยังเก็บประวัติแบบอ่านอย่างเดียวไว้ในวันที่เคยกำหนด</p>
     </div>
     <div className="todo-day-grid" aria-label={`Task days in ${monthLabel}`}>
     {Array.from({ length: totalDays }, (_, index) => {
@@ -27,7 +27,7 @@ export function TodoView({ model }: { model: any }) {
     const dateKey = `${key}-${String(day).padStart(2, "0")}`;
     const isPast = dateKey < todoToday;
     const total = todoDailyTotals[index];
-    const open = monthlyTodos.filter((todo) => Number(todo.dueDate.slice(-2)) === day && !todo.completed).length;
+    const open = todoDailyOpenTotals[index];
     return (
     <button key={day} type="button" aria-pressed={isSelected} className={`${isSelected ? "is-selected" : ""} ${isPast ? "is-past" : ""}`} onClick={() => { setSelectedTodoDay(day); cancelTodoEdit(); }}>
     <span>{String(day).padStart(2, "0")}</span>
@@ -79,11 +79,13 @@ export function TodoView({ model }: { model: any }) {
     
     {visibleTodos.length ? (
     <ul className="todo-list">
-    {visibleTodos.map((todo) => (
-    <li key={todo.id} className={`${todo.completed ? "is-complete" : ""} ${editingTodoId === todo.id ? "is-editing" : ""}`}>
+    {visibleTodos.map((todo) => {
+    const isHistorical = todo.dueDate !== selectedTodoDate;
+    return (
+    <li key={todo.id} className={`${todo.completed ? "is-complete" : ""} ${editingTodoId === todo.id ? "is-editing" : ""} ${isHistorical ? "is-history" : ""}`}>
     <label className="todo-check">
-    <input type="checkbox" checked={todo.completed} disabled={isSelectedTodoPast || editingTodoId === todo.id} onChange={() => {
-    if (isSelectedTodoPast) return;
+    <input type="checkbox" checked={todo.completed} disabled={isHistorical || isSelectedTodoPast || editingTodoId === todo.id} onChange={() => {
+    if (isHistorical || isSelectedTodoPast) return;
     setTodos((items) => items.map((item) => item.id === todo.id
     ? { ...item, completed: !item.completed, completedAt: item.completed ? undefined : Date.now() }
     : item));
@@ -119,15 +121,16 @@ export function TodoView({ model }: { model: any }) {
     <strong>{todo.title}</strong>
     <div>
     <span className={`todo-priority priority-${todo.priority.toLowerCase()}`}>{todo.priority}</span>
-    <span>{new Date(`${todo.dueDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}</span>
+    <span>{new Date(`${selectedTodoDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}</span>
+    {isHistorical && <span className="todo-history-note">History • carried forward to {todo.dueDate}</span>}
     {todo.completedAt && <span className="todo-completed-time">Completed {new Date(todo.completedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>}
-    {todo.originalDueDate && <span className="todo-overdue">{overdueLabel(todo)} • moved from {todo.originalDueDate}</span>}
+    {!isHistorical && todo.originalDueDate && <span className="todo-overdue">{overdueLabel(todo)} • moved from {todo.originalDueDate}</span>}
     </div>
     </div>
     <div className="todo-row-actions">
-    <button className="todo-edit-button" type="button" disabled={isSelectedTodoPast} onClick={() => startTodoEdit(todo)}>Edit</button>
-    <button className="todo-delete" type="button" disabled={isSelectedTodoPast} onClick={() => {
-    if (isSelectedTodoPast) return;
+    <button className="todo-edit-button" type="button" disabled={isHistorical || isSelectedTodoPast} onClick={() => startTodoEdit(todo)}>Edit</button>
+    <button className="todo-delete" type="button" disabled={isHistorical || isSelectedTodoPast} onClick={() => {
+    if (isHistorical || isSelectedTodoPast) return;
     setTodos((items) => items.filter((item) => item.id !== todo.id));
     if (editingTodoId === todo.id) cancelTodoEdit();
     }} aria-label={`Delete ${todo.title}`}>×</button>
@@ -135,7 +138,8 @@ export function TodoView({ model }: { model: any }) {
     </>
     )}
     </li>
-    ))}
+    );
+    })}
     </ul>
     ) : (
     <div className="todo-empty">

@@ -27,7 +27,7 @@ type Task = { id: string; activity: Activity; link: string; results: string; sta
 type DayRecord = { enabled: boolean; workMode: WorkMode; tasks: Task[] };
 type MonthData = Record<number, DayRecord>;
 type TodoPriority = (typeof TODO_PRIORITIES)[number];
-type TodoItem = { id: string; title: string; dueDate: string; originalDueDate?: string; carriedAt?: number; priority: TodoPriority; completed: boolean; completedAt?: number; createdAt: number };
+type TodoItem = { id: string; title: string; dueDate: string; originalDueDate?: string; historyDates?: string[]; carriedAt?: number; priority: TodoPriority; completed: boolean; completedAt?: number; createdAt: number };
 
 const statusClass: Record<string, string> = {
   Open: "status-open",
@@ -52,6 +52,11 @@ const createMonth = (days: number): MonthData =>
 const monthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 const localDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+const todoDates = (todo: TodoItem) => Array.from(new Set([
+  todo.dueDate,
+  ...(todo.historyDates ?? []),
+  ...(todo.originalDueDate ? [todo.originalDueDate] : []),
+]));
 
 export default function Home() {
   const [authReady, setAuthReady] = useState(false);
@@ -170,7 +175,13 @@ export default function Home() {
         const next = currentTodos.map((todo) => {
           if (todo.completed || !todo.dueDate || todo.dueDate >= today) return todo;
           changed = true;
-          return { ...todo, originalDueDate: todo.originalDueDate || todo.dueDate, dueDate: today, carriedAt: Date.now() };
+          return {
+            ...todo,
+            originalDueDate: todo.originalDueDate || todo.dueDate,
+            historyDates: Array.from(new Set([...(todo.historyDates ?? []), todo.dueDate])),
+            dueDate: today,
+            carriedAt: Date.now(),
+          };
         });
         return changed ? next : currentTodos;
       });
@@ -245,11 +256,16 @@ export default function Home() {
   const dashboardTodos = useMemo(() => [...monthlyTodos]
     .sort((a, b) => Number(a.completed) - Number(b.completed) || TODO_PRIORITY_RANK[a.priority] - TODO_PRIORITY_RANK[b.priority] || a.dueDate.localeCompare(b.dueDate) || a.createdAt - b.createdAt)
     .slice(0, 6), [monthlyTodos]);
-  const todoDailyTotals = useMemo(() => Array.from({ length: totalDays }, (_, index) =>
-    monthlyTodos.filter((todo) => Number(todo.dueDate.slice(-2)) === index + 1).length
-  ), [monthlyTodos, totalDays]);
+  const todoDailyTotals = useMemo(() => Array.from({ length: totalDays }, (_, index) => {
+    const date = `${key}-${String(index + 1).padStart(2, "0")}`;
+    return todos.filter((todo) => todoDates(todo).includes(date)).length;
+  }), [key, todos, totalDays]);
+  const todoDailyOpenTotals = useMemo(() => Array.from({ length: totalDays }, (_, index) => {
+    const date = `${key}-${String(index + 1).padStart(2, "0")}`;
+    return todos.filter((todo) => !todo.completed && todoDates(todo).includes(date)).length;
+  }), [key, todos, totalDays]);
   const visibleTodos = useMemo(() => todos
-    .filter((todo) => todo.dueDate === selectedTodoDate)
+    .filter((todo) => todoDates(todo).includes(selectedTodoDate))
     .filter((todo) => todoFilter === "all" || (todoFilter === "done" ? todo.completed : !todo.completed))
     .sort((a, b) => TODO_PRIORITY_RANK[a.priority] - TODO_PRIORITY_RANK[b.priority] || a.createdAt - b.createdAt), [selectedTodoDate, todoFilter, todos]);
 
@@ -450,7 +466,7 @@ export default function Home() {
       ) : isAdmin && view === "settings" ? (
         <AdminSettingsView user={user} />
       ) : (
-        <TodoView model={{ monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, monthlyTodos, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel }} />
+        <TodoView model={{ monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, todoDailyOpenTotals, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel }} />
       )}
 
       {isAdmin && importOpen && (
