@@ -10,6 +10,10 @@ export function AppHeader({ model }: { model: any }) {
     <h1>Submission Center</h1>
     </div>
     </div>
+    <div className="account-control header-account">
+    <span><strong>{user.displayName}</strong><small>Level {user.level}</small></span>
+    <button type="button" onClick={onLogout}>Logout</button>
+    </div>
     <nav className="primary-nav" aria-label="Primary navigation">
     <button className={view === "dashboard" ? "active" : ""} onClick={() => setView("dashboard")}>
     Dashboard
@@ -40,6 +44,10 @@ export function AppHeader({ model }: { model: any }) {
     {isAdmin && <button className={view === "days" ? "active" : ""} onClick={() => { setView("days"); setMobileMenuOpen(false); }}>Day Control</button>}
     <button className={view === "todos" ? "active" : ""} onClick={() => { setView("todos"); setMobileMenuOpen(false); }}>To Do List</button>
     </nav>
+    <div className="mobile-account">
+    <span><strong>{user.displayName}</strong><small>Level {user.level}</small></span>
+    <button type="button" onClick={onLogout}>Logout</button>
+    </div>
     </aside>
     )}
     <div className="topbar-actions">
@@ -60,10 +68,6 @@ export function AppHeader({ model }: { model: any }) {
     </button>
     </div>
     </>}
-    <div className="account-control">
-    <span><strong>{user.displayName}</strong><small>Level {user.level}</small></span>
-    <button type="button" onClick={onLogout}>Logout</button>
-    </div>
     </div>
     </header>
   );
