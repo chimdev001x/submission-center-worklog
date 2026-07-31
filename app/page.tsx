@@ -372,6 +372,8 @@ export default function Home() {
           <button className={view === "dashboard" ? "active" : ""} onClick={() => setView("dashboard")}>
             Dashboard
           </button>
+        </nav>
+        <nav className="secondary-nav" aria-label="Workspace navigation">
           <button className={view === "days" ? "active" : ""} onClick={() => setView("days")}>
             Day Control
           </button>
