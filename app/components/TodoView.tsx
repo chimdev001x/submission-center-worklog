@@ -123,7 +123,7 @@ export function TodoView({ model }: { model: any }) {
     <span className={`todo-priority priority-${todo.priority.toLowerCase()}`}>{todo.priority}</span>
     <span>{new Date(`${selectedTodoDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}</span>
     {isHistorical && <span className="todo-history-note">History • carried forward to {todo.dueDate}</span>}
-    {todo.completedAt && <span className="todo-completed-time">Completed {new Date(todo.completedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>}
+    {todo.completedAt && <span className="todo-completed-time">Completed {new Date(todo.completedAt).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}</span>}
     {!isHistorical && todo.originalDueDate && <span className="todo-overdue">{overdueLabel(todo)} • moved from {todo.originalDueDate}</span>}
     </div>
     </div>
