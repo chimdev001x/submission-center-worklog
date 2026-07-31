@@ -602,6 +602,7 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .todo-copy { min-width: 0; display: grid; gap: 8px; }
 .todo-copy > strong { overflow-wrap: anywhere; font-size: 13px; font-weight: 650; }
 .todo-copy > div { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 9px; }
+.todo-completed-time { color: #356643; font-weight: 700; }
 .todo-overdue { color: #a13e35; font-weight: 700; }
 .todo-priority { min-width: 54px; padding: 3px 6px; border: 1px solid currentColor; text-align: center; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 .priority-low { color: #667461; }

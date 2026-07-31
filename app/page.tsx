@@ -20,7 +20,7 @@ type Task = { id: string; activity: Activity; link: string; results: string; sta
 type DayRecord = { enabled: boolean; workMode: WorkMode; tasks: Task[] };
 type MonthData = Record<number, DayRecord>;
 type TodoPriority = (typeof TODO_PRIORITIES)[number];
-type TodoItem = { id: string; title: string; dueDate: string; originalDueDate?: string; carriedAt?: number; priority: TodoPriority; completed: boolean; createdAt: number };
+type TodoItem = { id: string; title: string; dueDate: string; originalDueDate?: string; carriedAt?: number; priority: TodoPriority; completed: boolean; completedAt?: number; createdAt: number };
 
 const statusClass: Record<string, string> = {
   Open: "status-open",
@@ -671,7 +671,9 @@ export default function Home() {
                     <label className="todo-check">
                       <input type="checkbox" checked={todo.completed} disabled={isSelectedTodoPast || editingTodoId === todo.id} onChange={() => {
                         if (isSelectedTodoPast) return;
-                        setTodos((items) => items.map((item) => item.id === todo.id ? { ...item, completed: !item.completed } : item));
+                        setTodos((items) => items.map((item) => item.id === todo.id
+                          ? { ...item, completed: !item.completed, completedAt: item.completed ? undefined : Date.now() }
+                          : item));
                       }} />
                       <span aria-hidden="true" />
                       <span className="sr-only">Mark {todo.title} as {todo.completed ? "open" : "done"}</span>
@@ -705,6 +707,7 @@ export default function Home() {
                           <div>
                             <span className={`todo-priority priority-${todo.priority.toLowerCase()}`}>{todo.priority}</span>
                             <span>{new Date(`${todo.dueDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                            {todo.completedAt && <span className="todo-completed-time">Completed {new Date(todo.completedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>}
                             {todo.originalDueDate && <span className="todo-overdue">{overdueLabel(todo)} • moved from {todo.originalDueDate}</span>}
                           </div>
                         </div>
