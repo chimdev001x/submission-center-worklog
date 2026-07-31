@@ -55,7 +55,7 @@ export function DayControlView({ model }: { model: any }) {
     
     {!selectedDay || !current ? (
     <section className="selection-empty" aria-live="polite">
-    <span>01—31</span>
+    <span>01—{String(totalDays).padStart(2, "0")}</span>
     <div>
     <h2>Select a day to continue</h2>
     <p>เลือกวันจากปฏิทินด้านบนเพื่อกำหนด Use / Not Use และเริ่มกรอกงาน</p>
