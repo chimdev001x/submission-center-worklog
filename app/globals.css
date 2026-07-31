@@ -788,22 +788,27 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .mobile-menu-trigger.is-open > span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
   .mobile-menu-trigger.is-open > span:nth-child(2) { opacity: 0; }
   .mobile-menu-trigger.is-open > span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+  .mobile-menu-trigger.is-open { position: fixed; top: 24px; right: 16px; z-index: 31; width: 54px; height: 54px; padding: 14px; border: 1px solid var(--line-strong); background: var(--paper); }
   .mobile-menu-trigger:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
   .mobile-nav-panel {
-    position: absolute;
-    top: 116px;
+    position: fixed;
+    top: 0;
     right: 0;
-    z-index: 20;
+    z-index: 30;
     width: 50vw;
-    display: grid;
-    border: 1px solid var(--line-strong);
+    height: 100dvh;
+    display: block;
+    padding-top: 132px;
+    border-left: 1px solid var(--line-strong);
     background: var(--paper);
     box-shadow: var(--shadow);
     animation: mobile-menu-slide-in 180ms ease-out both;
   }
-  .mobile-nav-panel button { min-height: 48px; padding: 12px 16px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; font-weight: 650; text-align: left; }
-  .mobile-nav-panel button:last-child { border-bottom: 0; }
-  .mobile-nav-panel button.active { background: var(--ink); color: var(--paper); }
+  .mobile-drawer-file-actions { min-height: 76px; display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 6px; padding: 0 8px; border-bottom: 1px solid var(--line-strong); }
+  .mobile-drawer-file-actions button { min-width: 0; min-height: 44px; padding: 10px 6px; border: 1px solid var(--line-strong); border-bottom: 0; background: var(--paper); color: var(--ink); font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .mobile-nav-panel nav { display: grid; }
+  .mobile-nav-panel nav > button { min-height: 64px; padding: 16px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; font-weight: 650; text-align: left; }
+  .mobile-nav-panel nav > button.active { background: var(--ink); color: var(--paper); }
   .mobile-nav-panel button:focus-visible { outline: 2px solid var(--sage); outline-offset: -3px; }
   @keyframes mobile-menu-slide-in {
     from { transform: translateX(100%); }

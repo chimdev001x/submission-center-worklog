@@ -407,11 +407,19 @@ export default function Home() {
           <span aria-hidden="true" /><span aria-hidden="true" /><span aria-hidden="true" />
         </button>
         {mobileMenuOpen && (
-          <nav className="mobile-nav-panel" id="mobile-navigation" aria-label="Mobile navigation">
-            <button className={view === "dashboard" ? "active" : ""} onClick={() => { setView("dashboard"); setMobileMenuOpen(false); }}>Dashboard</button>
-            <button className={view === "days" ? "active" : ""} onClick={() => { setView("days"); setMobileMenuOpen(false); }}>Day Control</button>
-            <button className={view === "todos" ? "active" : ""} onClick={() => { setView("todos"); setMobileMenuOpen(false); }}>To Do List</button>
-          </nav>
+          <aside className="mobile-nav-panel" id="mobile-navigation">
+            {view !== "todos" && (
+              <div className="mobile-drawer-file-actions">
+                <button type="button" onClick={() => { setMobileMenuOpen(false); openImport(); }}><span aria-hidden="true">↑</span> Import</button>
+                <button type="button" onClick={() => { setMobileMenuOpen(false); openExport(); }}><span aria-hidden="true">↓</span> Export</button>
+              </div>
+            )}
+            <nav aria-label="Mobile navigation">
+              <button className={view === "dashboard" ? "active" : ""} onClick={() => { setView("dashboard"); setMobileMenuOpen(false); }}>Dashboard</button>
+              <button className={view === "days" ? "active" : ""} onClick={() => { setView("days"); setMobileMenuOpen(false); }}>Day Control</button>
+              <button className={view === "todos" ? "active" : ""} onClick={() => { setView("todos"); setMobileMenuOpen(false); }}>To Do List</button>
+            </nav>
+          </aside>
         )}
         <div className="topbar-actions">
           <label className="month-control">
