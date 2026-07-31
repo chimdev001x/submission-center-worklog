@@ -382,7 +382,7 @@ export default function Home() {
       <AppHeader model={{ view, setView, mobileMenuOpen, setMobileMenuOpen, key, changeMonth, saved, openImport, openExport }} />
 
       {view === "dashboard" ? (
-        <DashboardView model={{ monthLabel, counts, STATUSES, statusClass, setView, dailyTotals, data, setSelectedDay, maxDaily, todoCounts, dashboardTodos, monthlyTodos }} />
+        <DashboardView model={{ monthLabel, counts, STATUSES, statusClass, setView, dailyTotals, data, setSelectedDay, maxDaily, todoCounts, dashboardTodos, monthlyTodos, overdueLabel }} />
       ) : view === "days" ? (
         <DayControlView model={{ monthLabel, selectedDay, current, updateDay, totalDays, data, dailyTotals, maxDaily, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, removeTask }} />
       ) : (

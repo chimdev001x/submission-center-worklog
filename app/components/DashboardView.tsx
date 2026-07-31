@@ -1,5 +1,5 @@
 export function DashboardView({ model }: { model: any }) {
-  const { monthLabel, counts, STATUSES, statusClass, setView, dailyTotals, data, setSelectedDay, maxDaily, todoCounts, dashboardTodos, monthlyTodos } = model;
+  const { monthLabel, counts, STATUSES, statusClass, setView, dailyTotals, data, setSelectedDay, maxDaily, todoCounts, dashboardTodos, monthlyTodos, overdueLabel } = model;
   return (
     <div className="page-view dashboard-view">
     <section className="page-intro">
@@ -73,6 +73,8 @@ export function DashboardView({ model }: { model: any }) {
     <p>
     <span className={`todo-priority priority-${todo.priority.toLowerCase()}`}>{todo.priority}</span>
     <span>{new Date(`${todo.dueDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}</span>
+    {!todo.completed && <span className="todo-not-completed">Not completed</span>}
+    {!todo.completed && todo.originalDueDate && <span className="todo-overdue">{overdueLabel(todo)} • moved from {todo.originalDueDate}</span>}
     {todo.completedAt && <span className="todo-completed-time">Completed {new Date(todo.completedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>}
     </p>
     </div>
@@ -89,4 +91,3 @@ export function DashboardView({ model }: { model: any }) {
     </div>
   );
 }
-
