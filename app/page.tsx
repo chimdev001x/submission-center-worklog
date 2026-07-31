@@ -186,7 +186,7 @@ export default function Home() {
   const visibleTodos = useMemo(() => todos
     .filter((todo) => todo.dueDate === selectedTodoDate)
     .filter((todo) => todoFilter === "all" || (todoFilter === "done" ? todo.completed : !todo.completed))
-    .sort((a, b) => TODO_PRIORITY_RANK[a.priority] - TODO_PRIORITY_RANK[b.priority] || Number(a.completed) - Number(b.completed) || a.createdAt - b.createdAt), [selectedTodoDate, todoFilter, todos]);
+    .sort((a, b) => TODO_PRIORITY_RANK[a.priority] - TODO_PRIORITY_RANK[b.priority] || a.createdAt - b.createdAt), [selectedTodoDate, todoFilter, todos]);
 
   const updateDay = (day: number, patch: Partial<DayRecord>) =>
     setData((value) => ({ ...value, [day]: { ...value[day], ...patch } }));
