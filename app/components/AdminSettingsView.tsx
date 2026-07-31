@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { AdminOverview, AdminUser, AuthUser, deleteAdminUser, loadAdminOverview, loadAdminUsers, updateAdminUserLimit } from "../auth-utils";
+import { AdminOverview, AdminUser, AuthUser, deleteAdminUser, loadAdminOverview, loadAdminUsers, updateAdminUserLevel, updateAdminUserLimit, UserLevel } from "../auth-utils";
 
 export function AdminSettingsView({ user }: { user: AuthUser }) {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
@@ -8,6 +8,7 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [updatingLevelId, setUpdatingLevelId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -69,6 +70,21 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
     }
   };
 
+  const changeLevel = async (account: AdminUser, level: UserLevel) => {
+    setUpdatingLevelId(account.id);
+    setError("");
+    setNotice("");
+    try {
+      await updateAdminUserLevel(account.id, level);
+      setUsers((current) => current.map((item) => item.id === account.id ? { ...item, level } : item));
+      setNotice(`อัปเดต ${account.displayName} เป็น Level ${level} แล้ว`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "ไม่สามารถเปลี่ยน Level ได้");
+    } finally {
+      setUpdatingLevelId(null);
+    }
+  };
+
   return (
     <section className="admin-settings" aria-labelledby="admin-settings-title">
       <header className="admin-settings-heading">
@@ -100,7 +116,7 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
             <tbody>{users.map((account) => (
               <tr key={account.id}>
                 <td><strong>{account.displayName}</strong><small>{account.email}</small></td>
-                <td><span className={`admin-level level-${account.level}`}>Level {account.level}</span></td>
+                <td><select className={`admin-level-select level-${account.level}`} aria-label={`Level for ${account.displayName}`} value={account.level} disabled={account.id === user.id || updatingLevelId === account.id} onChange={(event) => void changeLevel(account, Number(event.target.value) as UserLevel)}><option value={1}>Level 1</option><option value={2}>Level 2</option><option value={9}>Level 9</option></select></td>
                 <td><span className={account.confirmedAt ? "user-confirmed" : "user-pending"}>{account.confirmedAt ? "Confirmed" : "Pending email"}</span></td>
                 <td>{new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(account.createdAt))}</td>
                 <td><button type="button" className="admin-delete" disabled={account.id === user.id || deletingId === account.id} onClick={() => void removeUser(account)}>{account.id === user.id ? "Current admin" : deletingId === account.id ? "Deleting…" : "Delete"}</button></td>

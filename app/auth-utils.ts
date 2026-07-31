@@ -1,6 +1,8 @@
 import { supabase } from "./supabase-client";
+import { DEFAULT_THEME, ThemeSettings } from "./theme-utils";
 
-export type AuthUser = { id: string; email: string; displayName: string; level: 1 | 9 };
+export type UserLevel = 1 | 2 | 9;
+export type AuthUser = { id: string; email: string; displayName: string; level: UserLevel; theme: ThemeSettings };
 export type AdminUser = AuthUser & { createdAt: string; confirmedAt: string | null };
 export type AdminOverview = { userCount: number; maxUsers: number };
 
@@ -9,11 +11,11 @@ export class UserLimitError extends Error {}
 const profileFor = async (id: string, email: string): Promise<AuthUser> => {
   const { data, error } = await supabase
     .from("submission_profiles")
-    .select("display_name, level")
+    .select("display_name, level, theme")
     .eq("id", id)
     .single();
   if (error) throw error;
-  return { id, email, displayName: data.display_name, level: data.level as 1 | 9 };
+  return { id, email, displayName: data.display_name, level: data.level as UserLevel, theme: (data.theme as ThemeSettings | null) ?? DEFAULT_THEME };
 };
 
 export const initializeAuth = async (): Promise<AuthUser | null> => {
@@ -68,7 +70,8 @@ export const loadAdminUsers = async (): Promise<AdminUser[]> => {
     id: row.id,
     email: row.email,
     displayName: row.display_name,
-    level: row.level as 1 | 9,
+    level: row.level as UserLevel,
+    theme: DEFAULT_THEME,
     createdAt: row.created_at,
     confirmedAt: row.confirmed_at,
   }));
@@ -81,6 +84,16 @@ export const updateAdminUserLimit = async (maxUsers: number): Promise<void> => {
 
 export const deleteAdminUser = async (userId: string): Promise<void> => {
   const { error } = await supabase.rpc("submission_admin_delete_user", { target_user_id: userId });
+  if (error) throw error;
+};
+
+export const updateAdminUserLevel = async (userId: string, level: UserLevel): Promise<void> => {
+  const { error } = await supabase.rpc("submission_admin_set_user_level", { target_user_id: userId, next_level: level });
+  if (error) throw error;
+};
+
+export const saveTheme = async (userId: string, theme: ThemeSettings): Promise<void> => {
+  const { error } = await supabase.from("submission_profiles").update({ theme }).eq("id", userId);
   if (error) throw error;
 };
 

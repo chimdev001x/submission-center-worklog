@@ -9,7 +9,9 @@ import { TodoView } from "./components/TodoView";
 import { AppHeader } from "./components/AppHeader";
 import { AuthScreen } from "./components/AuthScreen";
 import { AdminSettingsView } from "./components/AdminSettingsView";
+import { ThemeSettingsView } from "./components/ThemeSettingsView";
 import { AuthUser, initializeAuth, loadMonthData, loadTodoData, logout, saveMonthData, saveTodoData } from "./auth-utils";
+import { applyTheme, DEFAULT_THEME } from "./theme-utils";
 
 const STATUSES = ["Open", "In Progress", "Passed", "Fail", "Stopper", "Cancel", "Done"] as const;
 const ACTIVITIES = ["Retest", "Open", "Meeting", "Create Testcase", "Smoke Test", "E2E", "Review"] as const;
@@ -17,7 +19,7 @@ const WORK_MODES = ["Office", "Onsite", "WFH"] as const;
 const TODO_PRIORITIES = ["Low", "Medium", "High"] as const;
 const TODO_PRIORITY_RANK: Record<TodoPriority, number> = { High: 0, Medium: 1, Low: 2 };
 
-type View = "dashboard" | "days" | "todos" | "settings";
+type View = "dashboard" | "days" | "todos" | "theme" | "settings";
 type ExportPeriod = "month" | "day" | "range";
 type ImportMode = "dates" | "month" | "day";
 type Status = (typeof STATUSES)[number] | "";
@@ -102,6 +104,8 @@ export default function Home() {
       setAuthReady(true);
     });
   }, []);
+
+  useEffect(() => { applyTheme(user?.theme ?? DEFAULT_THEME); }, [user?.theme]);
 
   const key = monthKey(month);
   const totalDays = daysInMonth(month);
@@ -448,6 +452,7 @@ export default function Home() {
     setTodosHydrated(false);
     setTodos([]);
     setUser(null);
+    applyTheme(DEFAULT_THEME);
   };
 
   if (!authReady) return <main className="auth-loading" aria-live="polite">Loading workspace…</main>;
@@ -465,6 +470,8 @@ export default function Home() {
         <DayControlView model={{ monthLabel, key, todoToday, selectedDay, current, updateDay, totalDays, data, dailyTotals, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, removeTask }} />
       ) : isAdmin && view === "settings" ? (
         <AdminSettingsView user={user} />
+      ) : user.level >= 2 && view === "theme" ? (
+        <ThemeSettingsView user={user} onThemeChange={(theme) => setUser((currentUser) => currentUser ? { ...currentUser, theme } : currentUser)} />
       ) : (
         <TodoView model={{ monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, todoDailyOpenTotals, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel }} />
       )}
