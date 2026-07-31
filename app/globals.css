@@ -552,6 +552,8 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .todo-day-grid button:hover { background: var(--paper); }
 .todo-day-grid button:focus-visible { outline: 3px solid var(--sage); outline-offset: -3px; }
 .todo-day-grid button.is-selected { background: var(--ink); color: var(--paper); }
+.todo-day-grid button.is-past:not(.is-selected) { background: rgba(218,211,199,.3); color: #8f897e; }
+.todo-day-grid button.is-past > span { text-decoration-color: var(--line-strong); }
 .todo-day-grid button > span { font-family: var(--font-display), serif; font-size: 30px; }
 .todo-day-grid button > small { margin-top: 6px; color: currentColor; font-size: 9px; opacity: .7; }
 .todo-day-grid button > i { height: 3px; margin-top: auto; overflow: hidden; background: rgba(170,163,148,.28); }
@@ -566,6 +568,11 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .todo-compose input:focus,
 .todo-compose select:focus { border-color: var(--sage); box-shadow: 0 0 0 2px var(--sage-soft); }
 .todo-compose .add-button { min-height: 40px; white-space: nowrap; }
+.todo-compose.is-locked { background: rgba(218,211,199,.18); }
+.todo-compose.is-locked form { opacity: .48; }
+.todo-compose input:disabled,
+.todo-compose select:disabled { cursor: not-allowed; background: #eeeae2; color: #8f897e; }
+.todo-lock-note { max-width: 54ch; margin-top: 9px; color: #8e433a; font-size: 10px; line-height: 1.5; }
 .todo-list-section { padding-top: 36px; }
 .todo-list-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
 .todo-filters { display: flex; border: 1px solid var(--line); }
@@ -582,6 +589,8 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .todo-check input:checked + span { border-color: var(--sage); background: var(--sage); }
 .todo-check input:checked + span::after { content: "✓"; color: var(--paper); font-size: 13px; }
 .todo-check input:focus-visible + span { outline: 2px solid var(--sage); outline-offset: 3px; }
+.todo-check input:disabled + span { cursor: not-allowed; background-color: #e5e0d7; border-style: dashed; }
+.todo-check input:checked:disabled + span { background-color: var(--sage); opacity: .65; }
 .todo-copy { min-width: 0; display: grid; gap: 8px; }
 .todo-copy > strong { overflow-wrap: anywhere; font-size: 13px; font-weight: 650; }
 .todo-copy > div { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 9px; }
@@ -595,6 +604,7 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .todo-delete { width: 34px; height: 34px; border: 0; background: transparent; color: var(--line-strong); font-size: 21px; }
 .todo-delete:hover { color: #9c3f36; }
 .todo-delete:focus-visible { outline: 2px solid #9c3f36; outline-offset: 2px; }
+.todo-delete:disabled { cursor: not-allowed; opacity: .25; }
 .todo-empty { min-height: 270px; display: grid; grid-template-columns: 160px 1fr; align-items: center; gap: 36px; border-block: 1px solid var(--line); }
 .todo-empty > span { color: var(--line-strong); font-family: var(--font-display), serif; font-size: 92px; text-align: center; }
 .todo-empty h3 { margin: 0; font-family: var(--font-display), serif; font-size: 28px; font-weight: 550; }

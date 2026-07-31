@@ -154,6 +154,8 @@ export default function Home() {
   const monthLabel = month.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const fullDate = selectedDay ? new Date(month.getFullYear(), month.getMonth(), selectedDay) : null;
   const selectedTodoDate = `${key}-${String(Math.min(selectedTodoDay, totalDays)).padStart(2, "0")}`;
+  const todoToday = localDateKey(new Date(todoClock));
+  const isSelectedTodoPast = selectedTodoDate < todoToday;
 
   const resolvedImportRows = useMemo(() => importRows.map((row) => {
     const dateMatchesMonth = row.date ? row.date.slice(0, 7) === key : false;
@@ -287,7 +289,7 @@ export default function Home() {
 
   const addTodo = () => {
     const title = todoTitle.trim();
-    if (!title) return;
+    if (!title || isSelectedTodoPast) return;
     setTodos((currentTodos) => [...currentTodos, {
       id: crypto.randomUUID(), title, dueDate: selectedTodoDate, priority: todoPriority, completed: false, createdAt: Date.now(),
     }]);
@@ -585,12 +587,14 @@ export default function Home() {
               {Array.from({ length: totalDays }, (_, index) => {
                 const day = index + 1;
                 const isSelected = selectedTodoDay === day;
+                const dateKey = `${key}-${String(day).padStart(2, "0")}`;
+                const isPast = dateKey < todoToday;
                 const total = todoDailyTotals[index];
                 const open = monthlyTodos.filter((todo) => Number(todo.dueDate.slice(-2)) === day && !todo.completed).length;
                 return (
-                  <button key={day} type="button" aria-pressed={isSelected} className={isSelected ? "is-selected" : ""} onClick={() => setSelectedTodoDay(day)}>
+                  <button key={day} type="button" aria-pressed={isSelected} className={`${isSelected ? "is-selected" : ""} ${isPast ? "is-past" : ""}`} onClick={() => setSelectedTodoDay(day)}>
                     <span>{String(day).padStart(2, "0")}</span>
-                    <small>{total} item{total === 1 ? "" : "s"}{open ? ` • ${open} open` : ""}</small>
+                    <small>{total} item{total === 1 ? "" : "s"}{open ? ` • ${open} open` : ""}{isPast ? " • Read only" : ""}</small>
                     <i aria-hidden="true"><b style={{ width: `${total ? Math.max(14, (total / Math.max(...todoDailyTotals, 1)) * 100) : 0}%` }} /></i>
                   </button>
                 );
@@ -598,23 +602,24 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="todo-compose" aria-labelledby="todo-compose-title">
+          <section className={`todo-compose ${isSelectedTodoPast ? "is-locked" : ""}`} aria-labelledby="todo-compose-title">
             <div>
-              <p className="section-kicker">NEW ITEM</p>
-              <h2 id="todo-compose-title">Add task for {new Date(`${selectedTodoDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "long" })}</h2>
+              <p className="section-kicker">{isSelectedTodoPast ? "READ ONLY" : "NEW ITEM"}</p>
+              <h2 id="todo-compose-title">{isSelectedTodoPast ? "Past date is locked" : "Add task"} — {new Date(`${selectedTodoDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "long" })}</h2>
+              {isSelectedTodoPast && <p className="todo-lock-note">ดูประวัติได้ แต่ไม่สามารถสร้าง แก้ไข เปลี่ยนสถานะ หรือลบข้อมูลของวันที่ผ่านมาแล้ว</p>}
             </div>
             <form onSubmit={(event) => { event.preventDefault(); addTodo(); }}>
               <label className="todo-title-field">
                 <span>Task</span>
-                <input value={todoTitle} onChange={(event) => setTodoTitle(event.target.value)} placeholder="Write a clear next action…" autoComplete="off" />
+                <input value={todoTitle} onChange={(event) => setTodoTitle(event.target.value)} placeholder="Write a clear next action…" autoComplete="off" disabled={isSelectedTodoPast} />
               </label>
               <label>
                 <span>Priority</span>
-                <select value={todoPriority} onChange={(event) => setTodoPriority(event.target.value as TodoPriority)}>
+                <select value={todoPriority} onChange={(event) => setTodoPriority(event.target.value as TodoPriority)} disabled={isSelectedTodoPast}>
                   {TODO_PRIORITIES.map((priority) => <option key={priority}>{priority}</option>)}
                 </select>
               </label>
-              <button className="add-button" type="submit" disabled={!todoTitle.trim()}>Add task</button>
+              <button className="add-button" type="submit" disabled={isSelectedTodoPast || !todoTitle.trim()}>Add task</button>
             </form>
           </section>
 
@@ -635,7 +640,10 @@ export default function Home() {
                 {visibleTodos.map((todo) => (
                   <li key={todo.id} className={todo.completed ? "is-complete" : ""}>
                     <label className="todo-check">
-                      <input type="checkbox" checked={todo.completed} onChange={() => setTodos((items) => items.map((item) => item.id === todo.id ? { ...item, completed: !item.completed } : item))} />
+                      <input type="checkbox" checked={todo.completed} disabled={isSelectedTodoPast} onChange={() => {
+                        if (isSelectedTodoPast) return;
+                        setTodos((items) => items.map((item) => item.id === todo.id ? { ...item, completed: !item.completed } : item));
+                      }} />
                       <span aria-hidden="true" />
                       <span className="sr-only">Mark {todo.title} as {todo.completed ? "open" : "done"}</span>
                     </label>
@@ -647,7 +655,10 @@ export default function Home() {
                         {todo.originalDueDate && <span className="todo-overdue">{overdueLabel(todo)} • moved from {todo.originalDueDate}</span>}
                       </div>
                     </div>
-                    <button className="todo-delete" type="button" onClick={() => setTodos((items) => items.filter((item) => item.id !== todo.id))} aria-label={`Delete ${todo.title}`}>×</button>
+                    <button className="todo-delete" type="button" disabled={isSelectedTodoPast} onClick={() => {
+                      if (isSelectedTodoPast) return;
+                      setTodos((items) => items.filter((item) => item.id !== todo.id));
+                    }} aria-label={`Delete ${todo.title}`}>×</button>
                   </li>
                 ))}
               </ul>
