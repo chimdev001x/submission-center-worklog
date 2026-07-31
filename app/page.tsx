@@ -8,6 +8,7 @@ const STATUSES = ["Open", "In Progress", "Passed", "Fail", "Stopper", "Cancel", 
 const ACTIVITIES = ["Retest", "Open", "Meeting", "Create Testcase", "Smoke Test", "E2E", "Review"] as const;
 const WORK_MODES = ["Office", "Onsite", "WFH"] as const;
 const TODO_PRIORITIES = ["Low", "Medium", "High"] as const;
+const TODO_PRIORITY_RANK: Record<TodoPriority, number> = { High: 0, Medium: 1, Low: 2 };
 
 type View = "dashboard" | "days" | "todos";
 type ExportPeriod = "month" | "day" | "range";
@@ -182,7 +183,7 @@ export default function Home() {
   const visibleTodos = useMemo(() => todos
     .filter((todo) => todo.dueDate === selectedTodoDate)
     .filter((todo) => todoFilter === "all" || (todoFilter === "done" ? todo.completed : !todo.completed))
-    .sort((a, b) => Number(a.completed) - Number(b.completed) || a.createdAt - b.createdAt), [selectedTodoDate, todoFilter, todos]);
+    .sort((a, b) => TODO_PRIORITY_RANK[a.priority] - TODO_PRIORITY_RANK[b.priority] || Number(a.completed) - Number(b.completed) || a.createdAt - b.createdAt), [selectedTodoDate, todoFilter, todos]);
 
   const updateDay = (day: number, patch: Partial<DayRecord>) =>
     setData((value) => ({ ...value, [day]: { ...value[day], ...patch } }));
@@ -613,12 +614,18 @@ export default function Home() {
                 <span>Task</span>
                 <input value={todoTitle} onChange={(event) => setTodoTitle(event.target.value)} placeholder="Write a clear next action…" autoComplete="off" disabled={isSelectedTodoPast} />
               </label>
-              <label>
-                <span>Priority</span>
-                <select value={todoPriority} onChange={(event) => setTodoPriority(event.target.value as TodoPriority)} disabled={isSelectedTodoPast}>
-                  {TODO_PRIORITIES.map((priority) => <option key={priority}>{priority}</option>)}
-                </select>
-              </label>
+              <fieldset className="todo-priority-picker" disabled={isSelectedTodoPast}>
+                <legend>Priority</legend>
+                <div>
+                  {TODO_PRIORITIES.map((priority) => (
+                    <label key={priority} className={`priority-${priority.toLowerCase()}`}>
+                      <input type="radio" name="todo-priority" value={priority} checked={todoPriority === priority} onChange={() => setTodoPriority(priority)} />
+                      <span aria-hidden="true" />
+                      <strong>{priority}</strong>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <button className="add-button" type="submit" disabled={isSelectedTodoPast || !todoTitle.trim()}>Add task</button>
             </form>
           </section>

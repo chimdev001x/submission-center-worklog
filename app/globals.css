@@ -560,18 +560,29 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .todo-day-grid button > i > b { display: block; height: 100%; background: var(--warm); }
 .todo-compose { display: grid; grid-template-columns: minmax(240px, .55fr) 1.45fr; gap: 36px; align-items: end; padding: 34px 0; border-bottom: 1px solid var(--line-strong); }
 .todo-compose h2 { font-size: 28px; }
-.todo-compose form { display: grid; grid-template-columns: minmax(230px, 1fr) 130px auto; gap: 10px; align-items: end; }
-.todo-compose label { min-width: 0; display: grid; gap: 6px; }
-.todo-compose label > span { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
-.todo-compose input,
-.todo-compose select { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 0; background: var(--paper); color: var(--ink); outline: 0; }
-.todo-compose input:focus,
-.todo-compose select:focus { border-color: var(--sage); box-shadow: 0 0 0 2px var(--sage-soft); }
+.todo-compose form { display: grid; grid-template-columns: minmax(230px, 1fr) 260px auto; gap: 10px; align-items: end; }
+.todo-compose form > label { min-width: 0; display: grid; gap: 6px; }
+.todo-compose form > label > span { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.todo-compose form > label > input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 0; background: var(--paper); color: var(--ink); outline: 0; }
+.todo-compose form > label > input:focus { border-color: var(--sage); box-shadow: 0 0 0 2px var(--sage-soft); }
 .todo-compose .add-button { min-height: 40px; white-space: nowrap; }
+.todo-priority-picker { min-width: 0; margin: 0; padding: 0; border: 0; }
+.todo-priority-picker legend { margin-bottom: 6px; color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.todo-priority-picker > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); }
+.todo-priority-picker label { position: relative; min-width: 0; min-height: 40px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 6px; background: var(--paper); cursor: pointer; }
+.todo-priority-picker label + label { border-left: 1px solid var(--line); }
+.todo-priority-picker input { position: absolute; opacity: 0; pointer-events: none; }
+.todo-priority-picker label > span { width: 9px; height: 9px; flex: 0 0 auto; border: 1px solid currentColor; background: transparent; }
+.todo-priority-picker label > strong { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.todo-priority-picker label:has(input:checked) > span { background: currentColor; box-shadow: inset 0 0 0 2px var(--paper); }
+.todo-priority-picker label.priority-low:has(input:checked) { background: #e5ebe0; }
+.todo-priority-picker label.priority-medium:has(input:checked) { background: #fbecd4; }
+.todo-priority-picker label.priority-high:has(input:checked) { background: #f5dfdc; }
+.todo-priority-picker label:has(input:focus-visible) { outline: 2px solid currentColor; outline-offset: 2px; z-index: 1; }
+.todo-priority-picker:disabled label { cursor: not-allowed; background: #eeeae2; }
 .todo-compose.is-locked { background: rgba(218,211,199,.18); }
 .todo-compose.is-locked form { opacity: .48; }
-.todo-compose input:disabled,
-.todo-compose select:disabled { cursor: not-allowed; background: #eeeae2; color: #8f897e; }
+.todo-compose form > label > input:disabled { cursor: not-allowed; background: #eeeae2; color: #8f897e; }
 .todo-lock-note { max-width: 54ch; margin-top: 9px; color: #8e433a; font-size: 10px; line-height: 1.5; }
 .todo-list-section { padding-top: 36px; }
 .todo-list-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
