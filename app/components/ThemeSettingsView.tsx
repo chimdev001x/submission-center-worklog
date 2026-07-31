@@ -32,6 +32,7 @@ export function ThemeSettingsView({ user, onThemeChange }: { user: AuthUser; onT
 
   return (
     <section className="theme-settings" aria-labelledby="theme-title">
+      <ThemeStore user={{...user,theme}} onThemeChange={(next)=>{setTheme(next);onThemeChange(next)}} />
       <header className="theme-heading">
         <div><p className="section-kicker">PERSONAL APPEARANCE</p><h2 id="theme-title">Theme studio</h2><p>เลือกแม่สีให้ระบบสร้างเฉด หรือควบคุมสีหลักของพื้นที่ทำงานด้วยตัวเอง</p></div>
         <div className="theme-preview" aria-label="Theme preview"><span /><span /><span /><strong>Aa</strong></div>
@@ -60,7 +61,6 @@ export function ThemeSettingsView({ user, onThemeChange }: { user: AuthUser; onT
       {error && <p className="admin-message is-error" role="alert">{error}</p>}
       {notice && <p className="admin-message is-success" role="status">{notice}</p>}
       <footer className="theme-actions"><button type="button" className="theme-reset" onClick={reset}>Reset default</button><button type="button" className="theme-save" onClick={() => void persist()} disabled={saving}>{saving ? "Saving…" : "Save theme →"}</button></footer>
-      <ThemeStore user={{...user,theme}} onThemeChange={(next)=>{setTheme(next);onThemeChange(next)}} />
     </section>
   );
 }
