@@ -244,7 +244,7 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 }
 .day-cell:hover { background: #fffdf9; }
 .day-cell:focus-visible { outline: 3px solid #769270; outline-offset: -3px; }
-.calendar-date.is-selected > .day-number, .calendar-date.is-selected > span:first-child { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--paper); }
+.calendar-date:is(.is-selected, .is-today) > .day-number, .calendar-date:is(.is-selected, .is-today) > span:first-child { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--paper); }
 .calendar-date.is-today > .day-number, .calendar-date.is-today > span:first-child { background: var(--warm); color: var(--paper); }
 .calendar-date.is-weekend:not(.is-selected, .is-today) { color: #989287; }
 .day-cell.is-disabled { color: #aaa398; background: rgba(218, 211, 199, .16); }
@@ -972,7 +972,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .day-cell, .calendar-blank { min-height: 86px; }
   .calendar-weekdays span { padding-block: 9px; font-size: 9px; }
   .day-number, .todo-day-grid button > span { width: 38px; height: 38px; font-size: 25px; }
-  .calendar-date.is-selected > .day-number, .calendar-date.is-selected > span:first-child { width: 38px; height: 38px; }
+  .calendar-date:is(.is-selected, .is-today) > .day-number, .calendar-date:is(.is-selected, .is-today) > span:first-child { width: 38px; height: 38px; }
   .day-meta, .todo-day-grid button > small { font-size: 8px; }
   .day-settings { display: block; }
   .day-settings h2 { margin-bottom: 20px; }
@@ -1087,7 +1087,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .day-cell, .calendar-blank { min-height: 76px; }
   .day-cell { padding: 8px 2px 7px; }
   .day-number, .todo-day-grid button > span { width: 34px; height: 34px; font-size: 22px; }
-  .calendar-date.is-selected > .day-number, .calendar-date.is-selected > span:first-child { width: 34px; height: 34px; }
+  .calendar-date:is(.is-selected, .is-today) > .day-number, .calendar-date:is(.is-selected, .is-today) > span:first-child { width: 34px; height: 34px; }
   .day-meta, .todo-day-grid button > small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chart-heading { align-items: start; }
   .text-action { max-width: 110px; text-align: right; }
