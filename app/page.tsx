@@ -79,6 +79,7 @@ export default function Home() {
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [editingTodoTitle, setEditingTodoTitle] = useState("");
   const [editingTodoPriority, setEditingTodoPriority] = useState<TodoPriority>("Medium");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const key = monthKey(month);
   const totalDays = daysInMonth(month);
@@ -132,6 +133,20 @@ export default function Home() {
     const timer = window.setInterval(carryOverdueTasks, 60_000);
     return () => window.clearInterval(timer);
   }, [todosHydrated]);
+
+  useEffect(() => {
+    const closeMobileMenu = (event: KeyboardEvent | Event) => {
+      if ((event instanceof KeyboardEvent && event.key === "Escape") || (!(event instanceof KeyboardEvent) && window.innerWidth > 720)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", closeMobileMenu);
+    window.addEventListener("resize", closeMobileMenu);
+    return () => {
+      window.removeEventListener("keydown", closeMobileMenu);
+      window.removeEventListener("resize", closeMobileMenu);
+    };
+  }, []);
 
   const counts = useMemo(() => {
     const next = Object.fromEntries(STATUSES.map((status) => [status, 0])) as Record<(typeof STATUSES)[number], number>;
@@ -381,6 +396,23 @@ export default function Home() {
             To Do List
           </button>
         </nav>
+        <button
+          className={`mobile-menu-trigger ${mobileMenuOpen ? "is-open" : ""}`}
+          type="button"
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-navigation"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          <span aria-hidden="true" /><span aria-hidden="true" /><span aria-hidden="true" />
+        </button>
+        {mobileMenuOpen && (
+          <nav className="mobile-nav-panel" id="mobile-navigation" aria-label="Mobile navigation">
+            <button className={view === "dashboard" ? "active" : ""} onClick={() => { setView("dashboard"); setMobileMenuOpen(false); }}>Dashboard</button>
+            <button className={view === "days" ? "active" : ""} onClick={() => { setView("days"); setMobileMenuOpen(false); }}>Day Control</button>
+            <button className={view === "todos" ? "active" : ""} onClick={() => { setView("todos"); setMobileMenuOpen(false); }}>To Do List</button>
+          </nav>
+        )}
         <div className="topbar-actions">
           <label className="month-control">
             <span>Month</span>
