@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { exportExcel, exportPdf } from "./export-utils";
+import { downloadImportTemplate, ImportedRow, parseImportFile } from "./import-utils";
 
 const STATUSES = ["Open", "In Progress", "Passed", "Fail", "Stopper", "Cancel", "Done"] as const;
 const ACTIVITIES = ["Retest", "Open", "Meeting", "Create Testcase", "Smoke Test", "E2E", "Review"] as const;
@@ -9,6 +10,7 @@ const WORK_MODES = ["Office", "Onsite", "WFH"] as const;
 
 type View = "dashboard" | "days";
 type ExportPeriod = "month" | "day" | "range";
+type ImportMode = "dates" | "month" | "day";
 type Status = (typeof STATUSES)[number] | "";
 type Activity = (typeof ACTIVITIES)[number] | "";
 type WorkMode = (typeof WORK_MODES)[number] | "";
@@ -55,6 +57,13 @@ export default function Home() {
   const [exportEntries, setExportEntries] = useState(true);
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
   const [exportError, setExportError] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importMode, setImportMode] = useState<ImportMode>("dates");
+  const [importDay, setImportDay] = useState(1);
+  const [importRows, setImportRows] = useState<ImportedRow[]>([]);
+  const [importFileName, setImportFileName] = useState("");
+  const [importError, setImportError] = useState("");
+  const [importing, setImporting] = useState(false);
 
   const key = monthKey(month);
   const totalDays = daysInMonth(month);
@@ -102,6 +111,20 @@ export default function Home() {
   const monthLabel = month.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const fullDate = selectedDay ? new Date(month.getFullYear(), month.getMonth(), selectedDay) : null;
 
+  const resolvedImportRows = useMemo(() => importRows.map((row) => {
+    const dateMatchesMonth = row.date ? row.date.slice(0, 7) === key : false;
+    const targetDay = importMode === "day" ? importDay : importMode === "dates" ? (dateMatchesMonth ? row.day : null) : row.day;
+    let issue = "";
+    if (!targetDay || targetDay < 1 || targetDay > totalDays) issue = "ไม่พบวันที่ที่ใช้ได้";
+    else if (importMode === "dates" && !dateMatchesMonth) issue = `วันที่ไม่อยู่ใน ${monthLabel}`;
+    else if (row.status && !STATUSES.some((status) => status.toLowerCase() === row.status.toLowerCase())) issue = "Status ไม่ตรงกับรายการที่รองรับ";
+    else if (row.activity && !ACTIVITIES.some((activity) => activity.toLowerCase() === row.activity.toLowerCase())) issue = "Activity ไม่ตรงกับรายการที่รองรับ";
+    else if (row.workMode && !WORK_MODES.some((mode) => mode.toLowerCase() === row.workMode.toLowerCase())) issue = "Work mode ไม่ถูกต้อง";
+    return { row, targetDay, issue };
+  }), [importDay, importMode, importRows, key, monthLabel, totalDays]);
+
+  const validImportRows = resolvedImportRows.filter((item) => !item.issue && item.targetDay);
+
   const updateDay = (day: number, patch: Partial<DayRecord>) =>
     setData((value) => ({ ...value, [day]: { ...value[day], ...patch } }));
 
@@ -142,6 +165,66 @@ export default function Home() {
     setExportEntries(true);
     setExportError("");
     setExportOpen(true);
+  };
+
+  const openImport = () => {
+    setImportDay(selectedDay || 1);
+    setImportMode(selectedDay ? "day" : "dates");
+    setImportRows([]);
+    setImportFileName("");
+    setImportError("");
+    setImportOpen(true);
+  };
+
+  const chooseImportFile = async (file?: File) => {
+    if (!file) return;
+    setImporting(true);
+    setImportError("");
+    try {
+      const rows = await parseImportFile(file);
+      setImportRows(rows);
+      setImportFileName(file.name);
+      if (!rows.length) setImportError("ไม่พบแถวข้อมูลในไฟล์");
+    } catch (error) {
+      setImportRows([]);
+      setImportFileName(file.name);
+      setImportError(error instanceof Error ? error.message : "อ่านไฟล์ไม่สำเร็จ");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const applyImport = () => {
+    if (!validImportRows.length) return;
+    const grouped = new Map<number, typeof validImportRows>();
+    validImportRows.forEach((item) => {
+      const day = item.targetDay as number;
+      grouped.set(day, [...(grouped.get(day) || []), item]);
+    });
+    setData((previous) => {
+      const next = { ...previous };
+      grouped.forEach((items, day) => {
+        const currentDay = next[day] || { enabled: true, workMode: "", tasks: [] };
+        const importedTasks = items.map(({ row }) => ({
+          id: crypto.randomUUID(),
+          activity: (ACTIVITIES.find((value) => value.toLowerCase() === row.activity.toLowerCase()) || "") as Activity,
+          link: row.link,
+          results: row.results,
+          status: (STATUSES.find((value) => value.toLowerCase() === row.status.toLowerCase()) || "") as Status,
+          remark: row.remark,
+        }));
+        const existingTasks = currentDay.tasks.filter((task) => Object.entries(task).some(([field, value]) => field !== "id" && String(value).trim()));
+        next[day] = {
+          enabled: items[0].row.enabled,
+          workMode: (WORK_MODES.find((value) => value.toLowerCase() === items[0].row.workMode.toLowerCase()) || currentDay.workMode) as WorkMode,
+          tasks: [...existingTasks, ...importedTasks],
+        };
+      });
+      return next;
+    });
+    setSelectedDay(validImportRows[0].targetDay as number);
+    setImportOpen(false);
+    setView("days");
   };
 
   const runExport = async (format: "excel" | "pdf") => {
@@ -192,6 +275,9 @@ export default function Home() {
             <span>Month</span>
             <input type="month" value={key} onChange={(event) => changeMonth(event.target.value)} />
           </label>
+          <button className="import-trigger" type="button" onClick={openImport}>
+            <span aria-hidden="true">↑</span> Import
+          </button>
           <span className={`save-state ${saved ? "is-saved" : ""}`}>
             <i aria-hidden="true" />{saved ? "Saved on this device" : "Saving…"}
           </span>
@@ -391,6 +477,104 @@ export default function Home() {
               </div>
             </section>
           )}
+        </div>
+      )}
+
+      {importOpen && (
+        <div className="export-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.currentTarget === event.target && !importing) setImportOpen(false);
+        }}>
+          <section className="export-dialog import-dialog" role="dialog" aria-modal="true" aria-labelledby="import-title">
+            <div className="export-heading">
+              <div>
+                <p className="section-kicker">{monthLabel}</p>
+                <h2 id="import-title">Import template</h2>
+                <p>รองรับ Excel (.xlsx) และ CSV พร้อมตรวจข้อมูลก่อนนำเข้า</p>
+              </div>
+              <button className="dialog-close" type="button" aria-label="Close import dialog" onClick={() => setImportOpen(false)} disabled={importing}>×</button>
+            </div>
+
+            <div className="export-options">
+              <fieldset>
+                <legend>Import mode</legend>
+                <div className="export-choice-grid">
+                  <label>
+                    <input type="radio" name="import-mode" checked={importMode === "dates"} onChange={() => setImportMode("dates")} />
+                    <span><strong>Dates in file</strong><small>ใช้วันที่ที่ระบุในแต่ละแถว</small></span>
+                  </label>
+                  <label>
+                    <input type="radio" name="import-mode" checked={importMode === "month"} onChange={() => setImportMode("month")} />
+                    <span><strong>Whole month</strong><small>ใช้คอลัมน์ Day หรือ Date</small></span>
+                  </label>
+                  <label>
+                    <input type="radio" name="import-mode" checked={importMode === "day"} onChange={() => setImportMode("day")} />
+                    <span><strong>One day</strong><small>นำทุกแถวลงวันที่เดียว</small></span>
+                  </label>
+                </div>
+              </fieldset>
+
+              {importMode === "day" && (
+                <label className="export-day-select">
+                  <span>Target date</span>
+                  <input
+                    type="date"
+                    min={`${key}-01`}
+                    max={`${key}-${String(totalDays).padStart(2, "0")}`}
+                    value={`${key}-${String(importDay).padStart(2, "0")}`}
+                    onChange={(event) => setImportDay(Number(event.target.value.slice(-2)))}
+                  />
+                </label>
+              )}
+
+              <div className="template-actions">
+                <label className="file-drop">
+                  <input type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" onChange={(event) => chooseImportFile(event.target.files?.[0])} />
+                  <span aria-hidden="true">↑</span>
+                  <strong>{importFileName || "Choose Excel or CSV"}</strong>
+                  <small>{importing ? "Reading file…" : "คอลัมน์ที่รองรับ: Date, Day, Work Mode, Activity, Link Plane, Results, Status, Remark"}</small>
+                </label>
+                <button className="text-action" type="button" onClick={() => downloadImportTemplate(month)}>Download {monthLabel} template →</button>
+              </div>
+
+              {importRows.length > 0 && (
+                <div className="import-preview">
+                  <div className="import-preview-heading">
+                    <div><span>Preview</span><strong>{validImportRows.length} valid / {importRows.length} rows</strong></div>
+                    <p>ข้อมูลเดิมอยู่ก่อน • ข้อมูลจากไฟล์ต่อท้าย</p>
+                  </div>
+                  <div className="import-preview-table-wrap">
+                    <table className="import-preview-table">
+                      <thead><tr><th>Row</th><th>Target</th><th>Activity</th><th>Link Plane</th><th>Status</th><th>Check</th></tr></thead>
+                      <tbody>
+                        {resolvedImportRows.slice(0, 8).map(({ row, targetDay, issue }) => (
+                          <tr key={row.sourceRow} className={issue ? "has-error" : ""}>
+                            <td>{row.sourceRow}</td>
+                            <td>{targetDay ? `${key}-${String(targetDay).padStart(2, "0")}` : "-"}</td>
+                            <td>{row.activity || "-"}</td>
+                            <td>{row.link || "-"}</td>
+                            <td>{row.status || "-"}</td>
+                            <td>{issue || "Ready"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {importRows.length > 8 && <p className="preview-more">และอีก {importRows.length - 8} แถว</p>}
+                </div>
+              )}
+              {importError && <p className="import-error" role="alert">{importError}</p>}
+            </div>
+
+            <div className="export-footer">
+              <p>ข้อมูลจะถูกบันทึกลงเดือนที่กำลังเปิดอยู่ ({monthLabel}) และแสดงบน Dashboard ทันที</p>
+              <div>
+                <button className="secondary-button" type="button" onClick={() => setImportOpen(false)} disabled={importing}>Cancel</button>
+                <button className="add-button" type="button" onClick={applyImport} disabled={importing || !validImportRows.length}>
+                  Import {validImportRows.length || ""} row{validImportRows.length === 1 ? "" : "s"}
+                </button>
+              </div>
+            </div>
+          </section>
         </div>
       )}
 
