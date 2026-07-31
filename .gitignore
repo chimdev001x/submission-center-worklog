@@ -44,4 +44,5 @@ next-env.d.ts
 # Local Netlify folder
 .netlify
 /netlify-dist/
+/build/
 /tailwindcss-*.log
