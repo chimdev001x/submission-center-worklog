@@ -21,6 +21,7 @@ export function TodoView({ model }: { model: any }) {
     <section className="todo-calendar" aria-labelledby="todo-calendar-title">
     <div className="todo-calendar-heading">
     <div><p className="section-kicker">TASK SCHEDULE</p><h2 id="todo-calendar-title">Choose a task day</h2></div>
+    <span className="theme-character-art" aria-hidden="true" />
     <p>งานที่เลยกำหนดจะทำต่อในวันปัจจุบัน และยังเก็บประวัติแบบอ่านอย่างเดียวไว้ในวันที่เคยกำหนด</p>
     </div>
     <div className="calendar-weekdays" aria-hidden="true">{weekdays.map((weekday) => <span key={weekday}>{weekday}</span>)}</div>
@@ -76,6 +77,7 @@ export function TodoView({ model }: { model: any }) {
     <section className="todo-list-section" aria-labelledby="todo-list-title">
     <div className="todo-list-heading">
     <div><p className="section-kicker">TASK BOARD</p><h2 id="todo-list-title">Your tasks</h2></div>
+    <span className="theme-character-art" aria-hidden="true" />
     <div className="todo-filters" role="group" aria-label="Filter tasks">
     {(["all", "open", "done"] as const).map((filter) => (
     <button key={filter} type="button" className={todoFilter === filter ? "active" : ""} onClick={() => setTodoFilter(filter)}>

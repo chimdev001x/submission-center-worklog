@@ -12,6 +12,7 @@ export function DayControlView({ model }: { model: any }) {
     <h2>Choose a working day</h2>
     <p className="panel-note">เลือกวันก่อน แล้วกำหนดว่าใช้งานหรือไม่ใช้งาน</p>
     </div>
+    <span className="theme-character-art" aria-hidden="true" />
     {selectedDay && current && (
     <div className="use-control">
     <span>Day status</span>
