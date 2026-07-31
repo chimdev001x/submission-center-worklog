@@ -16,8 +16,9 @@ export type ExportDay = {
 
 export type ExportPayload = {
   month: Date;
-  period: "month" | "day";
+  period: "month" | "day" | "range";
   day: number;
+  endDay: number;
   includeDashboard: boolean;
   includeEntries: boolean;
   days: Record<number, ExportDay>;
@@ -40,12 +41,20 @@ const monthName = (date: Date) => date.toLocaleDateString("en-US", { month: "lon
 
 const selectedDays = (payload: ExportPayload) => {
   if (payload.period === "day") return [payload.day];
+  if (payload.period === "range") {
+    return Array.from({ length: payload.endDay - payload.day + 1 }, (_, index) => payload.day + index);
+  }
   return Object.keys(payload.days).map(Number).sort((a, b) => a - b);
 };
 
 const fileStem = (payload: ExportPayload) => {
   if (payload.period === "day") {
     return `Submission-Center_${isoDate(new Date(payload.month.getFullYear(), payload.month.getMonth(), payload.day))}`;
+  }
+  if (payload.period === "range") {
+    const start = isoDate(new Date(payload.month.getFullYear(), payload.month.getMonth(), payload.day));
+    const end = isoDate(new Date(payload.month.getFullYear(), payload.month.getMonth(), payload.endDay));
+    return `Submission-Center_${start}_to_${end}`;
   }
   return `Submission-Center_${monthName(payload.month).replace(" ", "-")}_exported-${isoDate(new Date())}`;
 };
@@ -122,10 +131,12 @@ export async function exportExcel(payload: ExportPayload) {
     title.font = { name: "Tahoma", size: 20, bold: true, color: { argb: "FFFDF8" } };
     title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "25251F" } };
     title.alignment = { vertical: "middle", horizontal: "left" };
-    sheet.getCell("A4").value = payload.period === "day" ? "Date" : "Month";
-    sheet.getCell("B4").value = payload.period === "day"
-      ? isoDate(new Date(payload.month.getFullYear(), payload.month.getMonth(), payload.day))
-      : monthName(payload.month);
+    sheet.getCell("A4").value = payload.period === "month" ? "Month" : "Date range";
+    sheet.getCell("B4").value = payload.period === "month"
+      ? monthName(payload.month)
+      : payload.period === "day"
+        ? isoDate(new Date(payload.month.getFullYear(), payload.month.getMonth(), payload.day))
+        : `${isoDate(new Date(payload.month.getFullYear(), payload.month.getMonth(), payload.day))} to ${isoDate(new Date(payload.month.getFullYear(), payload.month.getMonth(), payload.endDay))}`;
     sheet.getCell("D4").value = "Total items";
     sheet.getCell("E4").value = overview.total;
     ["A4", "D4"].forEach((ref) => {
@@ -189,7 +200,7 @@ export async function exportExcel(payload: ExportPayload) {
     });
     sheet.mergeCells("A1:I2");
     const title = sheet.getCell("A1");
-    title.value = `WORK ENTRIES - ${payload.period === "day" ? rows[0]?.date || "Selected day" : monthName(payload.month)}`;
+    title.value = `WORK ENTRIES - ${payload.period === "month" ? monthName(payload.month) : fileStem(payload).replace("Submission-Center_", "")}`;
     title.font = { name: "Tahoma", size: 19, bold: true, color: { argb: "FFFDF8" } };
     title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "25251F" } };
     title.alignment = { vertical: "middle" };
@@ -260,9 +271,11 @@ export async function exportPdf(payload: ExportPayload) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
   await loadThaiFont(doc);
   const overview = summary(payload);
-  const periodLabel = payload.period === "day"
-    ? isoDate(new Date(payload.month.getFullYear(), payload.month.getMonth(), payload.day))
-    : monthName(payload.month);
+  const periodLabel = payload.period === "month"
+    ? monthName(payload.month)
+    : payload.period === "day"
+      ? isoDate(new Date(payload.month.getFullYear(), payload.month.getMonth(), payload.day))
+      : `${isoDate(new Date(payload.month.getFullYear(), payload.month.getMonth(), payload.day))} to ${isoDate(new Date(payload.month.getFullYear(), payload.month.getMonth(), payload.endDay))}`;
   const pageWidth = doc.internal.pageSize.getWidth();
 
   const header = (title: string, subtitle: string) => {

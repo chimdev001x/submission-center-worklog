@@ -8,7 +8,7 @@ const ACTIVITIES = ["Retest", "Open", "Meeting", "Create Testcase", "Smoke Test"
 const WORK_MODES = ["Office", "Onsite", "WFH"] as const;
 
 type View = "dashboard" | "days";
-type ExportPeriod = "month" | "day";
+type ExportPeriod = "month" | "day" | "range";
 type Status = (typeof STATUSES)[number] | "";
 type Activity = (typeof ACTIVITIES)[number] | "";
 type WorkMode = (typeof WORK_MODES)[number] | "";
@@ -50,6 +50,7 @@ export default function Home() {
   const [exportOpen, setExportOpen] = useState(false);
   const [exportPeriod, setExportPeriod] = useState<ExportPeriod>("month");
   const [exportDay, setExportDay] = useState(1);
+  const [exportEndDay, setExportEndDay] = useState(1);
   const [exportDashboard, setExportDashboard] = useState(true);
   const [exportEntries, setExportEntries] = useState(true);
   const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
@@ -135,6 +136,7 @@ export default function Home() {
   const openExport = () => {
     const day = selectedDay || 1;
     setExportDay(day);
+    setExportEndDay(day);
     setExportPeriod(view === "days" && selectedDay ? "day" : "month");
     setExportDashboard(view === "dashboard");
     setExportEntries(true);
@@ -151,6 +153,7 @@ export default function Home() {
         month,
         period: exportPeriod,
         day: exportDay,
+        endDay: exportEndDay,
         includeDashboard: exportDashboard,
         includeEntries: exportEntries,
         days: data,
@@ -185,9 +188,6 @@ export default function Home() {
           </button>
         </nav>
         <div className="topbar-actions">
-          <button className="export-trigger" type="button" onClick={openExport}>
-            <span aria-hidden="true">↓</span> Export
-          </button>
           <label className="month-control">
             <span>Month</span>
             <input type="month" value={key} onChange={(event) => changeMonth(event.target.value)} />
@@ -195,6 +195,9 @@ export default function Home() {
           <span className={`save-state ${saved ? "is-saved" : ""}`}>
             <i aria-hidden="true" />{saved ? "Saved on this device" : "Saving…"}
           </span>
+          <button className="export-trigger" type="button" onClick={openExport}>
+            <span aria-hidden="true">↓</span> Export
+          </button>
         </div>
       </header>
 
@@ -423,22 +426,42 @@ export default function Home() {
                     <input type="radio" name="export-period" checked={exportPeriod === "day"} onChange={() => setExportPeriod("day")} />
                     <span><strong>Single day</strong><small>เฉพาะวันที่เลือก</small></span>
                   </label>
+                  <label>
+                    <input type="radio" name="export-period" checked={exportPeriod === "range"} onChange={() => setExportPeriod("range")} />
+                    <span><strong>Date range</strong><small>เลือกวันเริ่มต้นถึงวันสิ้นสุด</small></span>
+                  </label>
                 </div>
               </fieldset>
 
-              {exportPeriod === "day" && (
-                <label className="export-day-select">
-                  <span>Choose day</span>
-                  <select value={exportDay} onChange={(event) => setExportDay(Number(event.target.value))}>
-                    {Array.from({ length: totalDays }, (_, index) => (
-                      <option key={index + 1} value={index + 1}>
-                        {new Date(month.getFullYear(), month.getMonth(), index + 1).toLocaleDateString("en-US", {
-                          weekday: "short", day: "2-digit", month: "short", year: "numeric",
-                        })}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              {exportPeriod !== "month" && (
+                <div className={`export-date-fields ${exportPeriod === "day" ? "is-single" : ""}`}>
+                  <label className="export-day-select">
+                    <span>{exportPeriod === "range" ? "From" : "Choose day"}</span>
+                    <input
+                      type="date"
+                      min={`${key}-01`}
+                      max={`${key}-${String(totalDays).padStart(2, "0")}`}
+                      value={`${key}-${String(exportDay).padStart(2, "0")}`}
+                      onChange={(event) => {
+                        const next = Number(event.target.value.slice(-2));
+                        setExportDay(next);
+                        if (next > exportEndDay) setExportEndDay(next);
+                      }}
+                    />
+                  </label>
+                  {exportPeriod === "range" && (
+                    <label className="export-day-select">
+                      <span>To</span>
+                      <input
+                        type="date"
+                        min={`${key}-${String(exportDay).padStart(2, "0")}`}
+                        max={`${key}-${String(totalDays).padStart(2, "0")}`}
+                        value={`${key}-${String(exportEndDay).padStart(2, "0")}`}
+                        onChange={(event) => setExportEndDay(Number(event.target.value.slice(-2)))}
+                      />
+                    </label>
+                  )}
+                </div>
               )}
 
               <fieldset>

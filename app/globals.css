@@ -415,9 +415,10 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .export-choice-grid,
 .export-section-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   border: 1px solid var(--line);
 }
+.export-choice-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.export-section-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .export-choice-grid label,
 .export-section-grid label {
   position: relative;
@@ -439,8 +440,11 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .export-section-grid strong { display: block; font-size: 12px; }
 .export-choice-grid small,
 .export-section-grid small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; line-height: 1.4; }
-.export-day-select { display: grid; }
-.export-day-select select {
+.export-date-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.export-date-fields.is-single { grid-template-columns: minmax(0, 1fr); }
+.export-day-select { min-width: 0; display: grid; }
+.export-day-select select,
+.export-day-select input {
   width: 100%;
   min-height: 43px;
   padding: 9px 11px;
@@ -450,6 +454,7 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
   color: var(--ink);
 }
 .export-day-select select:focus,
+.export-day-select input:focus,
 .export-choice-grid label:has(input:focus-visible),
 .export-section-grid label:has(input:focus-visible) { outline: 2px solid var(--sage); outline-offset: 2px; }
 .export-footer {
@@ -677,6 +682,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .export-section-grid { grid-template-columns: 1fr; }
   .export-choice-grid label + label,
   .export-section-grid label + label { border-left: 0; border-top: 1px solid var(--line); }
+  .export-date-fields { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
