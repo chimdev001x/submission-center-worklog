@@ -10,7 +10,7 @@ import { AppHeader } from "./components/AppHeader";
 import { AuthScreen } from "./components/AuthScreen";
 import { AdminSettingsView } from "./components/AdminSettingsView";
 import { ThemeSettingsView } from "./components/ThemeSettingsView";
-import { AuthUser, initializeAuth, loadMonthData, loadTodoData, logout, saveMonthData, saveTodoData } from "./auth-utils";
+import { AuthUser, initializeAuth, loadMonthData, loadTodoData, logout, recordActivity, saveMonthData, saveTodoData } from "./auth-utils";
 import { applyTheme, DEFAULT_THEME } from "./theme-utils";
 
 const STATUSES = ["Open", "In Progress", "Passed", "Fail", "Stopper", "Cancel", "Done"] as const;
@@ -106,6 +106,22 @@ export default function Home() {
   }, []);
 
   useEffect(() => { applyTheme(user?.theme ?? DEFAULT_THEME); }, [user?.theme]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const touch = () => {
+      if (document.visibilityState === "visible") void recordActivity().catch(() => undefined);
+    };
+    touch();
+    const timer = window.setInterval(touch, 60_000);
+    document.addEventListener("visibilitychange", touch);
+    window.addEventListener("focus", touch);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", touch);
+      window.removeEventListener("focus", touch);
+    };
+  }, [user?.id]);
 
   const key = monthKey(month);
   const totalDays = daysInMonth(month);

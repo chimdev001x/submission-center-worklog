@@ -3,7 +3,7 @@ import { DEFAULT_THEME, ThemeSettings } from "./theme-utils";
 
 export type UserLevel = 1 | 2 | 9;
 export type AuthUser = { id: string; email: string; displayName: string; level: UserLevel; theme: ThemeSettings };
-export type AdminUser = AuthUser & { createdAt: string; confirmedAt: string | null };
+export type AdminUser = AuthUser & { createdAt: string; confirmedAt: string | null; lastActiveAt: string | null; totalUsageSeconds: number };
 export type AdminOverview = { userCount: number; maxUsers: number };
 
 export class UserLimitError extends Error {}
@@ -65,7 +65,7 @@ export const loadAdminOverview = async (): Promise<AdminOverview> => {
 export const loadAdminUsers = async (): Promise<AdminUser[]> => {
   const { data, error } = await supabase.rpc("submission_admin_list_users");
   if (error) throw error;
-  type AdminUserRow = { id: string; email: string; display_name: string; level: number; created_at: string; confirmed_at: string | null };
+  type AdminUserRow = { id: string; email: string; display_name: string; level: number; created_at: string; confirmed_at: string | null; last_active_at: string | null; total_usage_seconds: number };
   return ((data ?? []) as AdminUserRow[]).map((row) => ({
     id: row.id,
     email: row.email,
@@ -74,11 +74,21 @@ export const loadAdminUsers = async (): Promise<AdminUser[]> => {
     theme: DEFAULT_THEME,
     createdAt: row.created_at,
     confirmedAt: row.confirmed_at,
+    lastActiveAt: row.last_active_at,
+    totalUsageSeconds: Number(row.total_usage_seconds ?? 0),
   }));
+};
+
+export const recordActivity = async (): Promise<void> => {
+  const { error } = await supabase.rpc("submission_record_activity");
+  if (error) throw error;
 };
 
 export const updateAdminUserLimit = async (maxUsers: number): Promise<void> => {
   const { error } = await supabase.rpc("submission_admin_set_user_limit", { next_max_users: maxUsers });
+  if (error?.message.includes("USER_LIMIT_BELOW_CURRENT_COUNT")) {
+    throw new Error("Maximum users ต้องไม่น้อยกว่าจำนวนผู้ใช้ปัจจุบัน");
+  }
   if (error) throw error;
 };
 

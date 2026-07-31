@@ -36,8 +36,9 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
   const saveLimit = async (event: FormEvent) => {
     event.preventDefault();
     const nextLimit = Number(limit);
-    if (!Number.isInteger(nextLimit) || nextLimit < 1) {
-      setError("จำนวนผู้ใช้ต้องเป็นเลขจำนวนเต็มอย่างน้อย 1");
+    const minimum = overview?.userCount ?? 1;
+    if (!Number.isInteger(nextLimit) || nextLimit < minimum) {
+      setError(`Maximum users ต้องไม่น้อยกว่าจำนวนผู้ใช้ปัจจุบัน (${minimum})`);
       return;
     }
     setSaving(true);
@@ -101,7 +102,7 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
       </header>
 
       <form className="admin-limit-form" onSubmit={saveLimit}>
-        <label><span>Maximum users</span><input type="number" min="1" step="1" value={limit} onChange={(event) => setLimit(event.target.value)} /></label>
+        <label><span>Maximum users</span><input type="number" min={overview?.userCount ?? 1} step="1" value={limit} onChange={(event) => setLimit(event.target.value)} /></label>
         <button type="submit" disabled={saving}>{saving ? "Saving…" : "Save limit →"}</button>
       </form>
 
@@ -112,13 +113,15 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
       {loading ? <p className="admin-loading">Loading users…</p> : (
         <div className="admin-users-table-wrap">
           <table className="admin-users-table">
-            <thead><tr><th>User</th><th>Level</th><th>Status</th><th>Created</th><th><span className="sr-only">Actions</span></th></tr></thead>
+            <thead><tr><th>User</th><th>Level</th><th>Status</th><th>Created</th><th>Last active</th><th>Total usage</th><th><span className="sr-only">Actions</span></th></tr></thead>
             <tbody>{users.map((account) => (
               <tr key={account.id}>
                 <td><strong>{account.displayName}</strong><small>{account.email}</small></td>
                 <td><select className={`admin-level-select level-${account.level}`} aria-label={`Level for ${account.displayName}`} value={account.level} disabled={account.id === user.id || updatingLevelId === account.id} onChange={(event) => void changeLevel(account, Number(event.target.value) as UserLevel)}><option value={1}>Level 1</option><option value={2}>Level 2</option><option value={9}>Level 9</option></select></td>
                 <td><span className={account.confirmedAt ? "user-confirmed" : "user-pending"}>{account.confirmedAt ? "Confirmed" : "Pending email"}</span></td>
                 <td>{new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(account.createdAt))}</td>
+                <td>{account.lastActiveAt ? new Intl.DateTimeFormat("th-TH", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(account.lastActiveAt)) : "ยังไม่เคยใช้งาน"}</td>
+                <td>{formatUsage(account.totalUsageSeconds)}</td>
                 <td><button type="button" className="admin-delete" disabled={account.id === user.id || deletingId === account.id} onClick={() => void removeUser(account)}>{account.id === user.id ? "Current admin" : deletingId === account.id ? "Deleting…" : "Delete"}</button></td>
               </tr>
             ))}</tbody>
@@ -127,4 +130,12 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
       )}
     </section>
   );
+}
+
+function formatUsage(totalSeconds: number) {
+  if (totalSeconds < 60) return `${totalSeconds} sec`;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (!hours) return `${minutes} min`;
+  return `${hours} hr ${minutes} min`;
 }

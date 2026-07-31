@@ -16,11 +16,11 @@ export function AppHeader({ model }: { model: any }) {
     <button type="button" onClick={onLogout}>Logout</button>
     </div>
     <nav className="primary-nav" aria-label="Primary navigation">
-    {isAdmin && <button className={view === "settings" ? "active" : ""} onClick={() => setView("settings")}>Admin Settings</button>}
     {canTheme && <button className={view === "theme" ? "active" : ""} onClick={() => setView("theme")}>Theme</button>}
     <button className={view === "dashboard" ? "active" : ""} onClick={() => setView("dashboard")}>
     Dashboard
     </button>
+    {isAdmin && <button className={view === "settings" ? "active" : ""} onClick={() => setView("settings")}>Admin Settings</button>}
     </nav>
     <nav className="secondary-nav" aria-label="Workspace navigation">
     {isAdmin && <button className={view === "days" ? "active" : ""} onClick={() => setView("days")}>
