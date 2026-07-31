@@ -109,8 +109,9 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .save-state { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .save-state i { width: 7px; height: 7px; border-radius: 50%; background: #d19a4b; }
 .save-state.is-saved i { background: #5e775c; }
-.export-trigger {
-  margin-left: auto;
+.file-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.export-trigger,
+.import-trigger {
   min-height: 35px;
   display: inline-flex;
   align-items: center;
@@ -122,22 +123,9 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
   font-size: 11px;
   font-weight: 700;
 }
-.export-trigger:hover { border-color: var(--ink); background: var(--cream); }
-.export-trigger:focus-visible { outline: 2px solid var(--sage); outline-offset: 3px; }
-.import-trigger {
-  min-height: 35px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 11px;
-  border: 0;
-  border-bottom: 1px solid var(--line-strong);
-  background: transparent;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-}
-.import-trigger:hover { color: var(--ink); border-color: var(--ink); }
+.export-trigger:hover,
+.import-trigger:hover { border-color: var(--ink); background: var(--cream); }
+.export-trigger:focus-visible,
 .import-trigger:focus-visible { outline: 2px solid var(--sage); outline-offset: 3px; }
 
 .overview {
@@ -625,8 +613,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .brand-lockup h1 { font-size: 24px; white-space: nowrap; }
   .eyebrow { margin-bottom: 4px; font-size: 8px; }
   .topbar-actions { grid-row: 3; grid-column: 1; gap: 8px; }
-  .export-trigger { padding-inline: 9px; }
-  .import-trigger { padding-inline: 7px; }
+  .export-trigger, .import-trigger { padding-inline: 9px; }
   .primary-nav {
     grid-row: 2;
     grid-column: 1 / -1;

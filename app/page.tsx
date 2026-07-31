@@ -275,15 +275,17 @@ export default function Home() {
             <span>Month</span>
             <input type="month" value={key} onChange={(event) => changeMonth(event.target.value)} />
           </label>
-          <button className="import-trigger" type="button" onClick={openImport}>
-            <span aria-hidden="true">↑</span> Import
-          </button>
           <span className={`save-state ${saved ? "is-saved" : ""}`}>
             <i aria-hidden="true" />{saved ? "Saved on this device" : "Saving…"}
           </span>
-          <button className="export-trigger" type="button" onClick={openExport}>
-            <span aria-hidden="true">↓</span> Export
-          </button>
+          <div className="file-actions">
+            <button className="import-trigger" type="button" onClick={openImport}>
+              <span aria-hidden="true">↑</span> Import
+            </button>
+            <button className="export-trigger" type="button" onClick={openExport}>
+              <span aria-hidden="true">↓</span> Export
+            </button>
+          </div>
         </div>
       </header>
 
