@@ -295,10 +295,11 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .bar-field button:hover i { background: var(--warm); }
 .bar-field button:focus-visible { outline: 2px solid var(--sage); outline-offset: 3px; }
 .bar-field button.is-disabled i { background: var(--line); }
-.dashboard-todos { display: grid; grid-template-columns: minmax(250px, .72fr) 1.28fr; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); }
-.dashboard-todos-summary { display: grid; align-content: start; gap: 24px; padding: 36px 34px 36px 0; border-right: 1px solid var(--line); }
-.dashboard-todos-summary > div:first-child > p:last-child { max-width: 42ch; margin-top: 10px; color: var(--muted); font-size: 11px; line-height: 1.55; }
-.dashboard-todos-summary .text-action { justify-self: start; }
+.dashboard-todos { padding: 40px 0 0; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); }
+.dashboard-todos-heading { margin-bottom: 34px; }
+.dashboard-todos-body { display: grid; grid-template-columns: minmax(250px, .72fr) 1.28fr; border-top: 1px solid var(--line); }
+.dashboard-todos-summary { display: grid; align-content: start; gap: 24px; padding: 28px 34px 28px 0; border-right: 1px solid var(--line); }
+.dashboard-todos-summary > p { max-width: 42ch; color: var(--muted); font-size: 11px; line-height: 1.55; }
 .dashboard-todo-counts { display: grid; grid-template-columns: repeat(3, 1fr); border-block: 1px solid var(--line); }
 .dashboard-todo-counts > span { display: grid; gap: 8px; padding: 13px 11px; border-right: 1px solid var(--line); }
 .dashboard-todo-counts > span:last-child { border-right: 0; }
@@ -786,7 +787,8 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .page-intro > div:first-child > p:last-child { display: none; }
   .dashboard-view .status-ledger { grid-template-columns: repeat(4, 1fr); }
   .month-chart { padding-top: 30px; }
-  .dashboard-todos { grid-template-columns: 1fr; }
+  .dashboard-todos { padding-top: 30px; }
+  .dashboard-todos-body { grid-template-columns: 1fr; }
   .dashboard-todos-summary { padding-right: 0; border-right: 0; border-bottom: 1px solid var(--line); }
   .dashboard-todo-preview { padding-left: 0; }
   .bar-field { height: 220px; gap: 2px; overflow-x: auto; grid-template-columns: repeat(31, minmax(8px, 1fr)); }

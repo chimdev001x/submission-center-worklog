@@ -445,41 +445,46 @@ export default function Home() {
           </section>
 
           <section className="dashboard-todos" aria-labelledby="dashboard-todos-title">
-            <div className="dashboard-todos-summary">
+            <div className="chart-heading dashboard-todos-heading">
               <div>
                 <p className="section-kicker">MONTHLY TASKS</p>
                 <h2 id="dashboard-todos-title">To Do List</h2>
-                <p>งานที่ยังเปิดอยู่จะแสดงก่อน โดยเรียงตาม High, Medium และ Low</p>
-              </div>
-              <div className="dashboard-todo-counts" aria-label="To do summary">
-                <span><small>All</small><strong>{todoCounts.total}</strong></span>
-                <span><small>Open</small><strong>{todoCounts.open}</strong></span>
-                <span><small>Done</small><strong>{todoCounts.done}</strong></span>
               </div>
               <button className="text-action" type="button" onClick={() => setView("todos")}>Manage To Do List →</button>
             </div>
 
-            <div className="dashboard-todo-preview">
-              {dashboardTodos.length ? (
-                <ul>
-                  {dashboardTodos.map((todo) => (
-                    <li key={todo.id} className={todo.completed ? "is-complete" : ""}>
-                      <span className="dashboard-todo-state" aria-hidden="true">{todo.completed ? "✓" : ""}</span>
-                      <div>
-                        <strong>{todo.title}</strong>
-                        <p>
-                          <span className={`todo-priority priority-${todo.priority.toLowerCase()}`}>{todo.priority}</span>
-                          <span>{new Date(`${todo.dueDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                          {todo.completedAt && <span className="todo-completed-time">Completed {new Date(todo.completedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="dashboard-todo-empty"><span>00</span><p>ยังไม่มี To Do ใน {monthLabel}</p></div>
-              )}
-              {monthlyTodos.length > dashboardTodos.length && <p className="dashboard-todo-more">+{monthlyTodos.length - dashboardTodos.length} more tasks</p>}
+            <div className="dashboard-todos-body">
+              <div className="dashboard-todos-summary">
+                <p>งานที่ยังเปิดอยู่จะแสดงก่อน โดยเรียงตาม High, Medium และ Low</p>
+                <div className="dashboard-todo-counts" aria-label="To do summary">
+                  <span><small>All</small><strong>{todoCounts.total}</strong></span>
+                  <span><small>Open</small><strong>{todoCounts.open}</strong></span>
+                  <span><small>Done</small><strong>{todoCounts.done}</strong></span>
+                </div>
+              </div>
+
+              <div className="dashboard-todo-preview">
+                {dashboardTodos.length ? (
+                  <ul>
+                    {dashboardTodos.map((todo) => (
+                      <li key={todo.id} className={todo.completed ? "is-complete" : ""}>
+                        <span className="dashboard-todo-state" aria-hidden="true">{todo.completed ? "✓" : ""}</span>
+                        <div>
+                          <strong>{todo.title}</strong>
+                          <p>
+                            <span className={`todo-priority priority-${todo.priority.toLowerCase()}`}>{todo.priority}</span>
+                            <span>{new Date(`${todo.dueDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                            {todo.completedAt && <span className="todo-completed-time">Completed {new Date(todo.completedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="dashboard-todo-empty"><span>00</span><p>ยังไม่มี To Do ใน {monthLabel}</p></div>
+                )}
+                {monthlyTodos.length > dashboardTodos.length && <p className="dashboard-todo-more">+{monthlyTodos.length - dashboardTodos.length} more tasks</p>}
+              </div>
             </div>
           </section>
         </div>
