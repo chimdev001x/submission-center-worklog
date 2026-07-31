@@ -7,8 +7,9 @@ import { downloadImportTemplate, ImportedRow, parseImportFile } from "./import-u
 const STATUSES = ["Open", "In Progress", "Passed", "Fail", "Stopper", "Cancel", "Done"] as const;
 const ACTIVITIES = ["Retest", "Open", "Meeting", "Create Testcase", "Smoke Test", "E2E", "Review"] as const;
 const WORK_MODES = ["Office", "Onsite", "WFH"] as const;
+const TODO_PRIORITIES = ["Low", "Medium", "High"] as const;
 
-type View = "dashboard" | "days";
+type View = "dashboard" | "days" | "todos";
 type ExportPeriod = "month" | "day" | "range";
 type ImportMode = "dates" | "month" | "day";
 type Status = (typeof STATUSES)[number] | "";
@@ -17,6 +18,8 @@ type WorkMode = (typeof WORK_MODES)[number] | "";
 type Task = { id: string; activity: Activity; link: string; results: string; status: Status; remark: string };
 type DayRecord = { enabled: boolean; workMode: WorkMode; tasks: Task[] };
 type MonthData = Record<number, DayRecord>;
+type TodoPriority = (typeof TODO_PRIORITIES)[number];
+type TodoItem = { id: string; title: string; dueDate: string; priority: TodoPriority; completed: boolean; createdAt: number };
 
 const statusClass: Record<string, string> = {
   Open: "status-open",
@@ -64,6 +67,12 @@ export default function Home() {
   const [importFileName, setImportFileName] = useState("");
   const [importError, setImportError] = useState("");
   const [importing, setImporting] = useState(false);
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [todosHydrated, setTodosHydrated] = useState(false);
+  const [todoTitle, setTodoTitle] = useState("");
+  const [todoDueDate, setTodoDueDate] = useState("");
+  const [todoPriority, setTodoPriority] = useState<TodoPriority>("Medium");
+  const [todoFilter, setTodoFilter] = useState<"all" | "open" | "done">("all");
 
   const key = monthKey(month);
   const totalDays = daysInMonth(month);
@@ -85,6 +94,17 @@ export default function Home() {
     }, 350);
     return () => window.clearTimeout(timer);
   }, [data, hydrated, key]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("submission-center:todos");
+    setTodos(stored ? JSON.parse(stored) : []);
+    setTodosHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!todosHydrated) return;
+    localStorage.setItem("submission-center:todos", JSON.stringify(todos));
+  }, [todos, todosHydrated]);
 
   const counts = useMemo(() => {
     const next = Object.fromEntries(STATUSES.map((status) => [status, 0])) as Record<(typeof STATUSES)[number], number>;
@@ -124,6 +144,14 @@ export default function Home() {
   }), [importDay, importMode, importRows, key, monthLabel, totalDays]);
 
   const validImportRows = resolvedImportRows.filter((item) => !item.issue && item.targetDay);
+  const todoCounts = useMemo(() => ({
+    total: todos.length,
+    open: todos.filter((todo) => !todo.completed).length,
+    done: todos.filter((todo) => todo.completed).length,
+  }), [todos]);
+  const visibleTodos = useMemo(() => todos
+    .filter((todo) => todoFilter === "all" || (todoFilter === "done" ? todo.completed : !todo.completed))
+    .sort((a, b) => Number(a.completed) - Number(b.completed) || a.createdAt - b.createdAt), [todoFilter, todos]);
 
   const updateDay = (day: number, patch: Partial<DayRecord>) =>
     setData((value) => ({ ...value, [day]: { ...value[day], ...patch } }));
@@ -227,6 +255,17 @@ export default function Home() {
     setView("days");
   };
 
+  const addTodo = () => {
+    const title = todoTitle.trim();
+    if (!title) return;
+    setTodos((currentTodos) => [...currentTodos, {
+      id: crypto.randomUUID(), title, dueDate: todoDueDate, priority: todoPriority, completed: false, createdAt: Date.now(),
+    }]);
+    setTodoTitle("");
+    setTodoDueDate("");
+    setTodoPriority("Medium");
+  };
+
   const runExport = async (format: "excel" | "pdf") => {
     if (!exportDashboard && !exportEntries) return;
     setExporting(format);
@@ -254,7 +293,7 @@ export default function Home() {
 
   return (
     <main className="app-shell">
-      <header className="topbar">
+      <header className={`topbar ${view === "todos" ? "is-compact" : ""}`}>
         <div className="brand-lockup">
           <span className="brand-mark">SC</span>
           <div>
@@ -269,8 +308,11 @@ export default function Home() {
           <button className={view === "days" ? "active" : ""} onClick={() => setView("days")}>
             Day Control
           </button>
+          <button className={view === "todos" ? "active" : ""} onClick={() => setView("todos")}>
+            To Do List
+          </button>
         </nav>
-        <div className="topbar-actions">
+        {view !== "todos" && <div className="topbar-actions">
           <label className="month-control">
             <span>Month</span>
             <input type="month" value={key} onChange={(event) => changeMonth(event.target.value)} />
@@ -286,7 +328,7 @@ export default function Home() {
               <span aria-hidden="true">↓</span> Export
             </button>
           </div>
-        </div>
+        </div>}
       </header>
 
       {view === "dashboard" ? (
@@ -333,7 +375,7 @@ export default function Home() {
             </div>
           </section>
         </div>
-      ) : (
+      ) : view === "days" ? (
         <div className="page-view day-control-view">
           <section className="calendar-panel">
             <div className="panel-heading">
@@ -479,6 +521,85 @@ export default function Home() {
               </div>
             </section>
           )}
+        </div>
+      ) : (
+        <div className="page-view todo-view">
+          <section className="todo-intro">
+            <div>
+              <p className="section-kicker">PERSONAL TASKS</p>
+              <h2>To Do List</h2>
+              <p>รวบรวมงานที่ต้องทำ ติดตามวันครบกำหนด และปิดงานเมื่อเสร็จ</p>
+            </div>
+            <div className="todo-summary" aria-label="To do summary">
+              <div><span>All</span><strong>{todoCounts.total}</strong></div>
+              <div><span>Open</span><strong>{todoCounts.open}</strong></div>
+              <div><span>Done</span><strong>{todoCounts.done}</strong></div>
+            </div>
+          </section>
+
+          <section className="todo-compose" aria-labelledby="todo-compose-title">
+            <div>
+              <p className="section-kicker">NEW ITEM</p>
+              <h2 id="todo-compose-title">What needs to be done?</h2>
+            </div>
+            <form onSubmit={(event) => { event.preventDefault(); addTodo(); }}>
+              <label className="todo-title-field">
+                <span>Task</span>
+                <input value={todoTitle} onChange={(event) => setTodoTitle(event.target.value)} placeholder="Write a clear next action…" autoComplete="off" />
+              </label>
+              <label>
+                <span>Due date</span>
+                <input type="date" value={todoDueDate} onInput={(event) => setTodoDueDate(event.currentTarget.value)} />
+              </label>
+              <label>
+                <span>Priority</span>
+                <select value={todoPriority} onChange={(event) => setTodoPriority(event.target.value as TodoPriority)}>
+                  {TODO_PRIORITIES.map((priority) => <option key={priority}>{priority}</option>)}
+                </select>
+              </label>
+              <button className="add-button" type="submit" disabled={!todoTitle.trim()}>Add task</button>
+            </form>
+          </section>
+
+          <section className="todo-list-section" aria-labelledby="todo-list-title">
+            <div className="todo-list-heading">
+              <div><p className="section-kicker">TASK BOARD</p><h2 id="todo-list-title">Your tasks</h2></div>
+              <div className="todo-filters" role="group" aria-label="Filter tasks">
+                {(["all", "open", "done"] as const).map((filter) => (
+                  <button key={filter} type="button" className={todoFilter === filter ? "active" : ""} onClick={() => setTodoFilter(filter)}>
+                    {filter[0].toUpperCase() + filter.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {visibleTodos.length ? (
+              <ul className="todo-list">
+                {visibleTodos.map((todo) => (
+                  <li key={todo.id} className={todo.completed ? "is-complete" : ""}>
+                    <label className="todo-check">
+                      <input type="checkbox" checked={todo.completed} onChange={() => setTodos((items) => items.map((item) => item.id === todo.id ? { ...item, completed: !item.completed } : item))} />
+                      <span aria-hidden="true" />
+                      <span className="sr-only">Mark {todo.title} as {todo.completed ? "open" : "done"}</span>
+                    </label>
+                    <div className="todo-copy">
+                      <strong>{todo.title}</strong>
+                      <div>
+                        <span className={`todo-priority priority-${todo.priority.toLowerCase()}`}>{todo.priority}</span>
+                        <span>{todo.dueDate ? new Date(`${todo.dueDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" }) : "No due date"}</span>
+                      </div>
+                    </div>
+                    <button className="todo-delete" type="button" onClick={() => setTodos((items) => items.filter((item) => item.id !== todo.id))} aria-label={`Delete ${todo.title}`}>×</button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="todo-empty">
+                <span>{todoFilter === "done" ? "00" : "✓"}</span>
+                <div><h3>{todoFilter === "all" ? "No tasks yet" : `No ${todoFilter} tasks`}</h3><p>เพิ่มงานใหม่จากช่องด้านบน แล้วรายการจะปรากฏที่นี่</p></div>
+              </div>
+            )}
+          </section>
         </div>
       )}
 
