@@ -8,6 +8,7 @@ import { DayControlView } from "./components/DayControlView";
 import { TodoView } from "./components/TodoView";
 import { AppHeader } from "./components/AppHeader";
 import { AuthScreen } from "./components/AuthScreen";
+import { AdminSettingsView } from "./components/AdminSettingsView";
 import { AuthUser, initializeAuth, loadMonthData, loadTodoData, logout, saveMonthData, saveTodoData } from "./auth-utils";
 
 const STATUSES = ["Open", "In Progress", "Passed", "Fail", "Stopper", "Cancel", "Done"] as const;
@@ -16,7 +17,7 @@ const WORK_MODES = ["Office", "Onsite", "WFH"] as const;
 const TODO_PRIORITIES = ["Low", "Medium", "High"] as const;
 const TODO_PRIORITY_RANK: Record<TodoPriority, number> = { High: 0, Medium: 1, Low: 2 };
 
-type View = "dashboard" | "days" | "todos";
+type View = "dashboard" | "days" | "todos" | "settings";
 type ExportPeriod = "month" | "day" | "range";
 type ImportMode = "dates" | "month" | "day";
 type Status = (typeof STATUSES)[number] | "";
@@ -446,6 +447,8 @@ export default function Home() {
         <DashboardView model={{ monthLabel, counts, STATUSES, statusClass, setView, dailyTotals, data, setSelectedDay, maxDaily, todoCounts, dashboardTodos, monthlyTodos, overdueLabel, todoOnly: !isAdmin }} />
       ) : isAdmin && view === "days" ? (
         <DayControlView model={{ monthLabel, selectedDay, current, updateDay, totalDays, data, dailyTotals, maxDaily, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, removeTask }} />
+      ) : isAdmin && view === "settings" ? (
+        <AdminSettingsView user={user} />
       ) : (
         <TodoView model={{ monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, monthlyTodos, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel }} />
       )}

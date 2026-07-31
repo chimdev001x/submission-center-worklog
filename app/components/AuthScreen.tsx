@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { AuthUser, login, register, resendConfirmation } from "../auth-utils";
+import { AuthUser, login, register, resendConfirmation, UserLimitError } from "../auth-utils";
 
 export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -16,12 +16,19 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUs
     setError("");
     setNotice("");
     try {
-      const user = mode === "login"
-        ? await login(email, password)
-        : await register(displayName, email, password);
-      onAuthenticated(user);
+      if (mode === "login") {
+        onAuthenticated(await login(email, password));
+      } else {
+        const user = await register(displayName, email, password);
+        if (user) onAuthenticated(user);
+        else {
+          setNotice("สมัครสำเร็จ กรุณายืนยันอีเมล แล้วกลับมา Login");
+          setPassword("");
+        }
+      }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "ไม่สามารถเข้าสู่ระบบได้");
+      if (cause instanceof UserLimitError) setNotice(cause.message);
+      else setError(cause instanceof Error ? cause.message : "ไม่สามารถเข้าสู่ระบบได้");
     } finally {
       setSubmitting(false);
     }
@@ -54,7 +61,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUs
         <div className="auth-panel-heading">
           <p className="section-kicker">ACCOUNT ACCESS</p>
           <h2>{mode === "login" ? "Welcome back" : "Create account"}</h2>
-          <p>{mode === "login" ? "เข้าสู่ระบบเพื่อเปิดพื้นที่ทำงานของคุณ" : "บัญชีใหม่จะเริ่มต้นที่ Level 1 และใช้ To Do List ได้"}</p>
+          {mode === "login" && <p>เข้าสู่ระบบเพื่อเปิดพื้นที่ทำงานของคุณ</p>}
         </div>
         <div className="auth-tabs" role="tablist" aria-label="Account access">
           <button type="button" role="tab" aria-selected={mode === "login"} className={mode === "login" ? "active" : ""} onClick={() => { setMode("login"); setError(""); }}>Login</button>
