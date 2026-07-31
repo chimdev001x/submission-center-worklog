@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { exportExcel, exportPdf } from "./export-utils";
 
 const STATUSES = ["Open", "In Progress", "Passed", "Fail", "Stopper", "Cancel", "Done"] as const;
 const ACTIVITIES = ["Retest", "Open", "Meeting", "Create Testcase", "Smoke Test", "E2E", "Review"] as const;
 const WORK_MODES = ["Office", "Onsite", "WFH"] as const;
 
 type View = "dashboard" | "days";
+type ExportPeriod = "month" | "day";
 type Status = (typeof STATUSES)[number] | "";
 type Activity = (typeof ACTIVITIES)[number] | "";
 type WorkMode = (typeof WORK_MODES)[number] | "";
@@ -44,7 +46,14 @@ export default function Home() {
   const [data, setData] = useState<MonthData>(() => createMonth(31));
   const [hydrated, setHydrated] = useState(false);
   const [saved, setSaved] = useState(true);
-  const [addCount, setAddCount] = useState(1);
+  const [addCount, setAddCount] = useState("1");
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportPeriod, setExportPeriod] = useState<ExportPeriod>("month");
+  const [exportDay, setExportDay] = useState(1);
+  const [exportDashboard, setExportDashboard] = useState(true);
+  const [exportEntries, setExportEntries] = useState(true);
+  const [exporting, setExporting] = useState<"excel" | "pdf" | null>(null);
+  const [exportError, setExportError] = useState("");
 
   const key = monthKey(month);
   const totalDays = daysInMonth(month);
@@ -115,10 +124,46 @@ export default function Home() {
 
   const addRows = () => {
     if (!selectedDay || !current) return;
-    const safeCount = Math.min(100, Math.max(1, Math.floor(addCount || 1)));
+    const parsedCount = Number(addCount);
+    const safeCount = Math.min(100, Math.max(1, Number.isFinite(parsedCount) ? Math.floor(parsedCount) : 1));
     updateDay(selectedDay, {
       tasks: [...current.tasks, ...Array.from({ length: safeCount }, () => makeTask())],
     });
+    setAddCount(String(safeCount));
+  };
+
+  const openExport = () => {
+    const day = selectedDay || 1;
+    setExportDay(day);
+    setExportPeriod(view === "days" && selectedDay ? "day" : "month");
+    setExportDashboard(view === "dashboard");
+    setExportEntries(true);
+    setExportError("");
+    setExportOpen(true);
+  };
+
+  const runExport = async (format: "excel" | "pdf") => {
+    if (!exportDashboard && !exportEntries) return;
+    setExporting(format);
+    setExportError("");
+    try {
+      const payload = {
+        month,
+        period: exportPeriod,
+        day: exportDay,
+        includeDashboard: exportDashboard,
+        includeEntries: exportEntries,
+        days: data,
+        statuses: STATUSES,
+      };
+      if (format === "excel") await exportExcel(payload);
+      else await exportPdf(payload);
+      setExportOpen(false);
+    } catch {
+      setExportError("สร้างไฟล์ไม่สำเร็จ กรุณาลองอีกครั้ง");
+    } finally {
+      setExporting(null);
+    }
   };
 
   return (
@@ -140,6 +185,9 @@ export default function Home() {
           </button>
         </nav>
         <div className="topbar-actions">
+          <button className="export-trigger" type="button" onClick={openExport}>
+            <span aria-hidden="true">↓</span> Export
+          </button>
           <label className="month-control">
             <span>Month</span>
             <input type="month" value={key} onChange={(event) => changeMonth(event.target.value)} />
@@ -290,17 +338,23 @@ export default function Home() {
                     <label>
                       <span>Rows</span>
                       <input
-                        type="number"
-                        min="1"
-                        max="100"
+                        type="text"
                         inputMode="numeric"
                         value={addCount}
-                        onChange={(event) => setAddCount(Number(event.target.value))}
+                        onFocus={(event) => event.currentTarget.select()}
+                        onChange={(event) => {
+                          const next = event.target.value.replace(/\D/g, "").slice(0, 3);
+                          setAddCount(next);
+                        }}
+                        onBlur={() => {
+                          const parsed = Number(addCount);
+                          setAddCount(String(Math.min(100, Math.max(1, parsed || 1))));
+                        }}
                         aria-label="Number of rows to add"
                       />
                     </label>
                     <button className="add-button" type="button" onClick={addRows}>
-                      <span aria-hidden="true">＋</span> Add {addCount === 1 ? "row" : "rows"}
+                      <span aria-hidden="true">＋</span> Add {addCount === "1" ? "row" : "rows"}
                     </button>
                   </div>
                 </div>
@@ -334,6 +388,90 @@ export default function Home() {
               </div>
             </section>
           )}
+        </div>
+      )}
+
+      {exportOpen && (
+        <div className="export-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.currentTarget === event.target && !exporting) setExportOpen(false);
+        }}>
+          <section className="export-dialog" role="dialog" aria-modal="true" aria-labelledby="export-title">
+            <div className="export-heading">
+              <div>
+                <p className="section-kicker">{monthLabel}</p>
+                <h2 id="export-title">Export data</h2>
+                <p>เลือกช่วงข้อมูลและรูปแบบไฟล์ที่ต้องการดาวน์โหลด</p>
+              </div>
+              <button
+                className="dialog-close"
+                type="button"
+                aria-label="Close export dialog"
+                onClick={() => setExportOpen(false)}
+                disabled={Boolean(exporting)}
+              >×</button>
+            </div>
+
+            <div className="export-options">
+              <fieldset>
+                <legend>Period</legend>
+                <div className="export-choice-grid">
+                  <label>
+                    <input type="radio" name="export-period" checked={exportPeriod === "month"} onChange={() => setExportPeriod("month")} />
+                    <span><strong>Whole month</strong><small>{monthLabel}</small></span>
+                  </label>
+                  <label>
+                    <input type="radio" name="export-period" checked={exportPeriod === "day"} onChange={() => setExportPeriod("day")} />
+                    <span><strong>Single day</strong><small>เฉพาะวันที่เลือก</small></span>
+                  </label>
+                </div>
+              </fieldset>
+
+              {exportPeriod === "day" && (
+                <label className="export-day-select">
+                  <span>Choose day</span>
+                  <select value={exportDay} onChange={(event) => setExportDay(Number(event.target.value))}>
+                    {Array.from({ length: totalDays }, (_, index) => (
+                      <option key={index + 1} value={index + 1}>
+                        {new Date(month.getFullYear(), month.getMonth(), index + 1).toLocaleDateString("en-US", {
+                          weekday: "short", day: "2-digit", month: "short", year: "numeric",
+                        })}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              <fieldset>
+                <legend>Include</legend>
+                <div className="export-section-grid">
+                  {view === "dashboard" && (
+                    <label>
+                      <input type="checkbox" checked={exportDashboard} onChange={(event) => setExportDashboard(event.target.checked)} />
+                      <span><strong>Dashboard summary</strong><small>ยอดรวม สถานะ และข้อมูลรายวัน</small></span>
+                    </label>
+                  )}
+                  <label>
+                    <input type="checkbox" checked={exportEntries} onChange={(event) => setExportEntries(event.target.checked)} />
+                    <span><strong>Work entries</strong><small>รายละเอียด Activity, Link, Results และ Status</small></span>
+                  </label>
+                </div>
+              </fieldset>
+            </div>
+
+            <div className="export-footer">
+              <p className={exportError ? "export-error" : ""} role={exportError ? "alert" : undefined}>
+                {exportError || "Excel และ PDF จะจัดหน้าแบบแนวนอน พร้อมตัดหน้าระหว่างแถวเพื่อไม่ให้ข้อมูลขาดครึ่ง"}
+              </p>
+              <div>
+                <button className="secondary-button" type="button" onClick={() => runExport("pdf")} disabled={Boolean(exporting) || (!exportDashboard && !exportEntries)}>
+                  {exporting === "pdf" ? "Creating PDF…" : "Export PDF"}
+                </button>
+                <button className="add-button" type="button" onClick={() => runExport("excel")} disabled={Boolean(exporting) || (!exportDashboard && !exportEntries)}>
+                  {exporting === "excel" ? "Creating Excel…" : "Export Excel"}
+                </button>
+              </div>
+            </div>
+          </section>
         </div>
       )}
 
