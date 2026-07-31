@@ -44,6 +44,7 @@ export default function Home() {
   const [data, setData] = useState<MonthData>(() => createMonth(31));
   const [hydrated, setHydrated] = useState(false);
   const [saved, setSaved] = useState(true);
+  const [addCount, setAddCount] = useState(1);
 
   const key = monthKey(month);
   const totalDays = daysInMonth(month);
@@ -110,6 +111,14 @@ export default function Home() {
     const [year, monthNumber] = value.split("-").map(Number);
     setHydrated(false);
     setMonth(new Date(year, monthNumber - 1, 1));
+  };
+
+  const addRows = () => {
+    if (!selectedDay || !current) return;
+    const safeCount = Math.min(100, Math.max(1, Math.floor(addCount || 1)));
+    updateDay(selectedDay, {
+      tasks: [...current.tasks, ...Array.from({ length: safeCount }, () => makeTask())],
+    });
   };
 
   return (
@@ -253,22 +262,47 @@ export default function Home() {
                   <p className="section-kicker">DAY {String(selectedDay).padStart(2, "0")}</p>
                   <h2>{fullDate?.toLocaleDateString("en-US", { weekday: "long", day: "2-digit", month: "long" })}</h2>
                 </div>
-                <label className="field-label">
-                  <span>Work mode</span>
-                  <select value={current.workMode} onChange={(event) => updateDay(selectedDay, { workMode: event.target.value as WorkMode })}>
-                    <option value="">Select location</option>
-                    {WORK_MODES.map((mode) => <option key={mode}>{mode}</option>)}
-                  </select>
-                </label>
+                <fieldset className="work-mode-picker">
+                  <legend>Work mode</legend>
+                  <div>
+                    {WORK_MODES.map((mode) => (
+                      <label key={mode}>
+                        <input
+                          type="radio"
+                          name={`work-mode-${selectedDay}`}
+                          value={mode}
+                          checked={current.workMode === mode}
+                          onChange={() => updateDay(selectedDay, { workMode: mode })}
+                        />
+                        <span className="choice-box" aria-hidden="true" />
+                        <span>{mode}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
                 <div className="day-stat"><span>Items logged</span><strong>{dailyTotals[selectedDay - 1]}</strong></div>
               </section>
 
               <section className="task-section" aria-labelledby="task-title">
                 <div className="task-heading">
                   <div><p className="section-kicker">DAILY SUBMISSION</p><h2 id="task-title">Work entries</h2></div>
-                  <button className="add-button" type="button" onClick={() => updateDay(selectedDay, { tasks: [...current.tasks, makeTask()] })}>
-                    <span aria-hidden="true">＋</span> Add row
-                  </button>
+                  <div className="add-row-control">
+                    <label>
+                      <span>Rows</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        inputMode="numeric"
+                        value={addCount}
+                        onChange={(event) => setAddCount(Number(event.target.value))}
+                        aria-label="Number of rows to add"
+                      />
+                    </label>
+                    <button className="add-button" type="button" onClick={addRows}>
+                      <span aria-hidden="true">＋</span> Add {addCount === 1 ? "row" : "rows"}
+                    </button>
+                  </div>
                 </div>
                 <div className="task-table-wrap">
                   <table className="task-table">
