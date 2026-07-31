@@ -197,6 +197,7 @@ export default function Home() {
   const todoCounts = useMemo(() => ({
     total: monthlyTodos.length,
     open: monthlyTodos.filter((todo) => !todo.completed).length,
+    notCompleted: monthlyTodos.filter((todo) => !todo.completed).length,
     done: monthlyTodos.filter((todo) => todo.completed).length,
   }), [monthlyTodos]);
   const dashboardTodos = useMemo(() => [...monthlyTodos]

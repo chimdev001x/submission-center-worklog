@@ -58,6 +58,7 @@ export function DashboardView({ model }: { model: any }) {
     <div className="dashboard-todo-counts" aria-label="To do summary">
     <span><small>All</small><strong>{todoCounts.total}</strong></span>
     <span><small>Open</small><strong>{todoCounts.open}</strong></span>
+    <span><small>Not completed</small><strong>{todoCounts.notCompleted}</strong></span>
     <span><small>Done</small><strong>{todoCounts.done}</strong></span>
     </div>
     </div>
