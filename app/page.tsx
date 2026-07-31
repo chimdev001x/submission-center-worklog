@@ -8,7 +8,7 @@ import { DayControlView } from "./components/DayControlView";
 import { TodoView } from "./components/TodoView";
 import { AppHeader } from "./components/AppHeader";
 import { AuthScreen } from "./components/AuthScreen";
-import { AuthUser, initializeAuth, logout } from "./auth-utils";
+import { AuthUser, initializeAuth, loadMonthData, loadTodoData, logout, saveMonthData, saveTodoData } from "./auth-utils";
 
 const STATUSES = ["Open", "In Progress", "Passed", "Fail", "Stopper", "Cancel", "Done"] as const;
 const ACTIVITIES = ["Retest", "Open", "Meeting", "Create Testcase", "Smoke Test", "E2E", "Review"] as const;
@@ -101,30 +101,54 @@ export default function Home() {
   const totalDays = daysInMonth(month);
 
   useEffect(() => {
+    if (!user || user.level < 9) return;
+    let cancelled = false;
     const stored = localStorage.getItem(`submission-center:${key}`);
-    setData(stored ? JSON.parse(stored) : createMonth(totalDays));
-    setSelectedDay(null);
-    setHydrated(true);
-    setSaved(true);
-  }, [key, totalDays]);
+    setHydrated(false);
+    loadMonthData<MonthData>(user.id, key).then((remote) => {
+      if (cancelled) return;
+      const next = remote ?? (stored ? JSON.parse(stored) as MonthData : createMonth(totalDays));
+      setData(next);
+      setSelectedDay(null);
+      setHydrated(true);
+      setSaved(true);
+      if (!remote && stored) void saveMonthData(user.id, key, next);
+    }).catch(() => {
+      if (cancelled) return;
+      setData(stored ? JSON.parse(stored) : createMonth(totalDays));
+      setHydrated(true);
+    });
+    return () => { cancelled = true; };
+  }, [key, totalDays, user]);
 
   useEffect(() => {
     if (!hydrated) return;
     setSaved(false);
     const timer = window.setTimeout(() => {
       localStorage.setItem(`submission-center:${key}`, JSON.stringify(data));
-      setSaved(true);
+      if (user) void saveMonthData(user.id, key, data).then(() => setSaved(true)).catch(() => setSaved(false));
     }, 350);
     return () => window.clearTimeout(timer);
-  }, [data, hydrated, key]);
+  }, [data, hydrated, key, user]);
 
   useEffect(() => {
     if (!user) return;
     const storageKey = user.level === 9 ? "submission-center:todos" : `submission-center:todos:${user.id}`;
     const accountStored = localStorage.getItem(storageKey);
-    const parsed = accountStored ? JSON.parse(accountStored) as TodoItem[] : [];
-    setTodos(parsed);
-    setTodosHydrated(true);
+    let cancelled = false;
+    setTodosHydrated(false);
+    loadTodoData<TodoItem>(user.id).then((remote) => {
+      if (cancelled) return;
+      const parsed = remote ?? (accountStored ? JSON.parse(accountStored) as TodoItem[] : []);
+      setTodos(parsed);
+      setTodosHydrated(true);
+      if (!remote && accountStored) void saveTodoData(user.id, parsed);
+    }).catch(() => {
+      if (cancelled) return;
+      setTodos(accountStored ? JSON.parse(accountStored) as TodoItem[] : []);
+      setTodosHydrated(true);
+    });
+    return () => { cancelled = true; };
   }, [user]);
 
   useEffect(() => {
@@ -132,6 +156,7 @@ export default function Home() {
     if (!user) return;
     const storageKey = user.level === 9 ? "submission-center:todos" : `submission-center:todos:${user.id}`;
     localStorage.setItem(storageKey, JSON.stringify(todos));
+    void saveTodoData(user.id, todos).catch(() => undefined);
   }, [todos, todosHydrated, user]);
 
   useEffect(() => {
@@ -401,7 +426,7 @@ export default function Home() {
   };
 
   const handleLogout = () => {
-    logout();
+    void logout();
     setMobileMenuOpen(false);
     setTodosHydrated(false);
     setTodos([]);

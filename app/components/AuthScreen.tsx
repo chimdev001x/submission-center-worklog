@@ -4,7 +4,7 @@ import { AuthUser, login, register } from "../auth-utils";
 export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [displayName, setDisplayName] = useState("");
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -15,8 +15,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUs
     setError("");
     try {
       const user = mode === "login"
-        ? await login(username, password)
-        : await register(displayName, username, password);
+        ? await login(email, password)
+        : await register(displayName, email, password);
       onAuthenticated(user);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "ไม่สามารถเข้าสู่ระบบได้");
@@ -46,7 +46,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (user: AuthUs
         </div>
         <form className="auth-form" onSubmit={submit}>
           {mode === "register" && <label><span>Display name</span><input value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="name" required /></label>}
-          <label><span>Username</span><input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required /></label>
+          <label><span>Email</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
           <label><span>Password</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "register" ? 8 : undefined} required /></label>
           {error && <p className="auth-error" role="alert">{error}</p>}
           <button className="auth-submit" type="submit" disabled={submitting}>{submitting ? "Please wait…" : mode === "login" ? "Login →" : "Create Level 1 account →"}</button>

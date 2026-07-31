@@ -1,73 +1,65 @@
-export type AuthUser = { id: string; username: string; displayName: string; level: 1 | 9 };
-type StoredUser = AuthUser & { passwordHash: string };
+import { supabase } from "./supabase-client";
 
-const USERS_KEY = "submission-center:users";
-const SESSION_KEY = "submission-center:session";
-const ADMIN_USERNAME = "admin";
-const ADMIN_PASSWORD = "Admin@123";
+export type AuthUser = { id: string; email: string; displayName: string; level: 1 | 9 };
 
-const hashPassword = async (password: string) => {
-  const bytes = new TextEncoder().encode(password);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+const profileFor = async (id: string, email: string): Promise<AuthUser> => {
+  const { data, error } = await supabase
+    .from("submission_profiles")
+    .select("display_name, level")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return { id, email, displayName: data.display_name, level: data.level as 1 | 9 };
 };
-
-const readUsers = (): StoredUser[] => {
-  try { return JSON.parse(localStorage.getItem(USERS_KEY) || "[]"); }
-  catch { return []; }
-};
-
-const publicUser = (user: StoredUser): AuthUser => ({
-  id: user.id,
-  username: user.username,
-  displayName: user.displayName,
-  level: user.level,
-});
 
 export const initializeAuth = async (): Promise<AuthUser | null> => {
-  const users = readUsers();
-  if (!users.some((user) => user.username === ADMIN_USERNAME)) {
-    users.push({
-      id: "admin",
-      username: ADMIN_USERNAME,
-      displayName: "Administrator",
-      level: 9,
-      passwordHash: await hashPassword(ADMIN_PASSWORD),
-    });
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  }
-  const sessionId = localStorage.getItem(SESSION_KEY);
-  const sessionUser = users.find((user) => user.id === sessionId);
-  return sessionUser ? publicUser(sessionUser) : null;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user.email) return null;
+  return profileFor(session.user.id, session.user.email);
 };
 
-export const login = async (username: string, password: string): Promise<AuthUser> => {
-  const normalized = username.trim().toLowerCase();
-  const passwordHash = await hashPassword(password);
-  const user = readUsers().find((item) => item.username === normalized && item.passwordHash === passwordHash);
-  if (!user) throw new Error("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
-  localStorage.setItem(SESSION_KEY, user.id);
-  return publicUser(user);
+export const login = async (email: string, password: string): Promise<AuthUser> => {
+  const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+  if (error || !data.user?.email) throw new Error("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+  return profileFor(data.user.id, data.user.email);
 };
 
-export const register = async (displayName: string, username: string, password: string): Promise<AuthUser> => {
-  const users = readUsers();
-  const normalized = username.trim().toLowerCase();
-  if (!displayName.trim() || !normalized || !password) throw new Error("กรุณากรอกข้อมูลให้ครบ");
-  if (!/^[a-z0-9._-]{3,24}$/.test(normalized)) throw new Error("Username ต้องมี 3–24 ตัว และใช้ a-z, 0-9, จุด, _ หรือ -");
+export const register = async (displayName: string, email: string, password: string): Promise<AuthUser> => {
+  if (!displayName.trim() || !email.trim() || !password) throw new Error("กรุณากรอกข้อมูลให้ครบ");
   if (password.length < 8) throw new Error("รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร");
-  if (users.some((user) => user.username === normalized)) throw new Error("Username นี้ถูกใช้งานแล้ว");
-  const user: StoredUser = {
-    id: crypto.randomUUID(),
-    username: normalized,
-    displayName: displayName.trim(),
-    level: 1,
-    passwordHash: await hashPassword(password),
-  };
-  users.push(user);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  localStorage.setItem(SESSION_KEY, user.id);
-  return publicUser(user);
+  const { data, error } = await supabase.auth.signUp({
+    email: email.trim().toLowerCase(),
+    password,
+    options: {
+      data: { display_name: displayName.trim() },
+      emailRedirectTo: typeof window === "undefined" ? undefined : window.location.origin,
+    },
+  });
+  if (error) throw error;
+  if (!data.session || !data.user?.email) throw new Error("สมัครสำเร็จ กรุณายืนยันอีเมล แล้วกลับมา Login");
+  return profileFor(data.user.id, data.user.email);
 };
 
-export const logout = () => localStorage.removeItem(SESSION_KEY);
+export const logout = async () => { await supabase.auth.signOut(); };
+
+export const loadMonthData = async <T>(userId: string, monthKey: string): Promise<T | null> => {
+  const { data, error } = await supabase.from("submission_months").select("data").eq("user_id", userId).eq("month_key", monthKey).maybeSingle();
+  if (error) throw error;
+  return (data?.data as T | undefined) ?? null;
+};
+
+export const saveMonthData = async <T>(userId: string, monthKey: string, data: T) => {
+  const { error } = await supabase.from("submission_months").upsert({ user_id: userId, month_key: monthKey, data, updated_at: new Date().toISOString() });
+  if (error) throw error;
+};
+
+export const loadTodoData = async <T>(userId: string): Promise<T[] | null> => {
+  const { data, error } = await supabase.from("submission_todos").select("data").eq("user_id", userId).maybeSingle();
+  if (error) throw error;
+  return (data?.data as T[] | undefined) ?? null;
+};
+
+export const saveTodoData = async <T>(userId: string, data: T[]) => {
+  const { error } = await supabase.from("submission_todos").upsert({ user_id: userId, data, updated_at: new Date().toISOString() });
+  if (error) throw error;
+};
