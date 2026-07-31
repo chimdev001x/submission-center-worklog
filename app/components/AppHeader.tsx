@@ -39,15 +39,15 @@ export function AppHeader({ model }: { model: any }) {
     </button>
     {mobileMenuOpen && (
     <aside className="mobile-nav-panel" id="mobile-navigation">
+    <div className="mobile-account">
+    <span><strong>{user.displayName}</strong><small>Level {user.level}</small></span>
+    <button type="button" onClick={onLogout}>Logout</button>
+    </div>
     <nav aria-label="Mobile navigation">
     <button className={view === "dashboard" ? "active" : ""} onClick={() => { setView("dashboard"); setMobileMenuOpen(false); }}>Dashboard</button>
     {isAdmin && <button className={view === "days" ? "active" : ""} onClick={() => { setView("days"); setMobileMenuOpen(false); }}>Day Control</button>}
     <button className={view === "todos" ? "active" : ""} onClick={() => { setView("todos"); setMobileMenuOpen(false); }}>To Do List</button>
     </nav>
-    <div className="mobile-account">
-    <span><strong>{user.displayName}</strong><small>Level {user.level}</small></span>
-    <button type="button" onClick={onLogout}>Logout</button>
-    </div>
     </aside>
     )}
     <div className="topbar-actions">
