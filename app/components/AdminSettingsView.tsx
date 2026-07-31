@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AdminOverview, AdminUser, AuthUser, deleteAdminUser, loadAdminOverview, loadAdminUsers, updateAdminUserLevel, updateAdminUserLimit, UserLevel } from "../auth-utils";
+import { AdminThemeStore } from "./AdminThemeStore";
 
 export function AdminSettingsView({ user }: { user: AuthUser }) {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
@@ -128,6 +129,7 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
           </table>
         </div>
       )}
+      <AdminThemeStore userId={user.id} />
     </section>
   );
 }

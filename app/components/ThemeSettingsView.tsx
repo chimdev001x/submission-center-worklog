@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AuthUser, saveTheme } from "../auth-utils";
 import { DEFAULT_THEME, ThemeSettings } from "../theme-utils";
+import { ThemeStore } from "./ThemeStore";
 
 const SWATCHES = ["#667461", "#315f73", "#76547d", "#a05c45", "#886f32", "#365f50"];
 
@@ -59,6 +60,7 @@ export function ThemeSettingsView({ user, onThemeChange }: { user: AuthUser; onT
       {error && <p className="admin-message is-error" role="alert">{error}</p>}
       {notice && <p className="admin-message is-success" role="status">{notice}</p>}
       <footer className="theme-actions"><button type="button" className="theme-reset" onClick={reset}>Reset default</button><button type="button" className="theme-save" onClick={() => void persist()} disabled={saving}>{saving ? "Saving…" : "Save theme →"}</button></footer>
+      <ThemeStore user={{...user,theme}} onThemeChange={(next)=>{setTheme(next);onThemeChange(next)}} />
     </section>
   );
 }

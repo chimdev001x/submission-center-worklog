@@ -6,6 +6,7 @@ export type ThemeSettings = {
   surface: string;
   text: string;
   accent: string;
+  productId?: string;
 };
 
 export const DEFAULT_THEME: ThemeSettings = {
@@ -45,5 +46,6 @@ export const applyTheme = (settings: ThemeSettings) => {
   if (typeof document === "undefined") return;
   const theme = resolvedTheme(settings);
   const root = document.documentElement;
+  root.dataset.storeTheme = settings.productId ?? "";
   Object.entries(theme).forEach(([name, value]) => root.style.setProperty(`--${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`, value));
 };
