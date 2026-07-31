@@ -408,12 +408,6 @@ export default function Home() {
         </button>
         {mobileMenuOpen && (
           <aside className="mobile-nav-panel" id="mobile-navigation">
-            {view !== "todos" && (
-              <div className="mobile-drawer-file-actions">
-                <button type="button" onClick={() => { setMobileMenuOpen(false); openImport(); }}><span aria-hidden="true">↑</span> Import</button>
-                <button type="button" onClick={() => { setMobileMenuOpen(false); openExport(); }}><span aria-hidden="true">↓</span> Export</button>
-              </div>
-            )}
             <nav aria-label="Mobile navigation">
               <button className={view === "dashboard" ? "active" : ""} onClick={() => { setView("dashboard"); setMobileMenuOpen(false); }}>Dashboard</button>
               <button className={view === "days" ? "active" : ""} onClick={() => { setView("days"); setMobileMenuOpen(false); }}>Day Control</button>

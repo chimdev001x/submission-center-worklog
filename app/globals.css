@@ -804,8 +804,6 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
     box-shadow: var(--shadow);
     animation: mobile-menu-slide-in 180ms ease-out both;
   }
-  .mobile-drawer-file-actions { min-height: 76px; display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 6px; padding: 0 8px; border-bottom: 1px solid var(--line-strong); }
-  .mobile-drawer-file-actions button { min-width: 0; min-height: 44px; padding: 10px 6px; border: 1px solid var(--line-strong); border-bottom: 0; background: var(--paper); color: var(--ink); font-size: 10px; font-weight: 700; white-space: nowrap; }
   .mobile-nav-panel nav { display: grid; }
   .mobile-nav-panel nav > button { min-height: 64px; padding: 16px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12px; font-weight: 650; text-align: left; }
   .mobile-nav-panel nav > button.active { background: var(--ink); color: var(--paper); }
