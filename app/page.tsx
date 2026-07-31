@@ -462,7 +462,7 @@ export default function Home() {
       {view === "dashboard" ? (
         <DashboardView model={{ monthLabel, counts, STATUSES, statusClass, setView, dailyTotals, data, setSelectedDay, maxDaily, todoCounts, dashboardTodos, monthlyTodos, overdueLabel, todoOnly: !isAdmin }} />
       ) : isAdmin && view === "days" ? (
-        <DayControlView model={{ monthLabel, selectedDay, current, updateDay, totalDays, data, dailyTotals, maxDaily, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, removeTask }} />
+        <DayControlView model={{ monthLabel, key, todoToday, selectedDay, current, updateDay, totalDays, data, dailyTotals, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, removeTask }} />
       ) : isAdmin && view === "settings" ? (
         <AdminSettingsView user={user} />
       ) : (

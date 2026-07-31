@@ -1,5 +1,8 @@
 export function DayControlView({ model }: { model: any }) {
-  const { monthLabel, selectedDay, current, updateDay, totalDays, data, dailyTotals, maxDaily, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, removeTask } = model;
+  const { monthLabel, key, todoToday, selectedDay, current, updateDay, totalDays, data, dailyTotals, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, removeTask } = model;
+  const weekdays = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+  const firstWeekday = new Date(`${key}-01T00:00:00`).getDay();
+  const calendarCells = Math.ceil((firstWeekday + totalDays) / 7) * 7;
   return (
     <div className="page-view day-control-view">
     <section className="calendar-panel">
@@ -28,25 +31,31 @@ export function DayControlView({ model }: { model: any }) {
     )}
     </div>
     
-    <div className="day-grid" role="list" aria-label={`Days in ${monthLabel}`}>
-    {Array.from({ length: totalDays }, (_, index) => {
-    const dayNumber = index + 1;
+    <div className="calendar-weekdays" aria-hidden="true">{weekdays.map((weekday) => <span key={weekday}>{weekday}</span>)}</div>
+    <div className="day-grid month-calendar-grid" aria-label={`Days in ${monthLabel}`}>
+    {Array.from({ length: calendarCells }, (_, cellIndex) => {
+    const dayNumber = cellIndex - firstWeekday + 1;
+    if (dayNumber < 1 || dayNumber > totalDays) return <span className="calendar-blank" aria-hidden="true" key={`blank-${cellIndex}`} />;
+    const index = dayNumber - 1;
     const record = data[dayNumber];
     const isSelected = selectedDay === dayNumber;
     const isEnabled = record?.enabled ?? true;
     const itemCount = dailyTotals[index];
+    const dateKey = `${key}-${String(dayNumber).padStart(2, "0")}`;
+    const isToday = dateKey === todoToday;
+    const isWeekend = cellIndex % 7 === 0 || cellIndex % 7 === 6;
     return (
     <button
     type="button"
-    className={`day-cell ${isSelected ? "is-selected" : ""} ${!isEnabled ? "is-disabled" : ""}`}
+    className={`day-cell calendar-date ${isSelected ? "is-selected" : ""} ${isToday ? "is-today" : ""} ${isWeekend ? "is-weekend" : ""} ${!isEnabled ? "is-disabled" : ""}`}
     onClick={() => setSelectedDay(dayNumber)}
     key={dayNumber}
-    role="listitem"
     aria-pressed={isSelected}
+    aria-label={`${new Date(`${dateKey}T00:00:00`).toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" })}, ${isEnabled ? `${itemCount} items` : "Not in use"}`}
     >
-    <span className="day-number">{String(dayNumber).padStart(2, "0")}</span>
+    <span className="day-number">{dayNumber}</span>
     <span className="day-meta">{isEnabled ? `${itemCount} item${itemCount === 1 ? "" : "s"}` : "Not in use"}</span>
-    <span className="day-bar" aria-hidden="true"><i style={{ width: `${(itemCount / maxDaily) * 100}%` }} /></span>
+    <span className="calendar-dot" aria-hidden="true" style={{ opacity: itemCount || !isEnabled ? 1 : 0 }} />
     </button>
     );
     })}

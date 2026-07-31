@@ -1,5 +1,8 @@
 export function TodoView({ model }: { model: any }) {
   const { monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, todoDailyOpenTotals, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel } = model;
+  const weekdays = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+  const firstWeekday = new Date(`${key}-01T00:00:00`).getDay();
+  const calendarCells = Math.ceil((firstWeekday + totalDays) / 7) * 7;
   return (
     <div className="page-view todo-view">
     <section className="todo-intro">
@@ -20,19 +23,24 @@ export function TodoView({ model }: { model: any }) {
     <div><p className="section-kicker">TASK SCHEDULE</p><h2 id="todo-calendar-title">Choose a task day</h2></div>
     <p>งานที่เลยกำหนดจะทำต่อในวันปัจจุบัน และยังเก็บประวัติแบบอ่านอย่างเดียวไว้ในวันที่เคยกำหนด</p>
     </div>
-    <div className="todo-day-grid" aria-label={`Task days in ${monthLabel}`}>
-    {Array.from({ length: totalDays }, (_, index) => {
-    const day = index + 1;
+    <div className="calendar-weekdays" aria-hidden="true">{weekdays.map((weekday) => <span key={weekday}>{weekday}</span>)}</div>
+    <div className="todo-day-grid month-calendar-grid" aria-label={`Task days in ${monthLabel}`}>
+    {Array.from({ length: calendarCells }, (_, cellIndex) => {
+    const day = cellIndex - firstWeekday + 1;
+    if (day < 1 || day > totalDays) return <span className="calendar-blank" aria-hidden="true" key={`blank-${cellIndex}`} />;
+    const index = day - 1;
     const isSelected = selectedTodoDay === day;
     const dateKey = `${key}-${String(day).padStart(2, "0")}`;
     const isPast = dateKey < todoToday;
+    const isToday = dateKey === todoToday;
+    const isWeekend = cellIndex % 7 === 0 || cellIndex % 7 === 6;
     const total = todoDailyTotals[index];
     const open = todoDailyOpenTotals[index];
     return (
-    <button key={day} type="button" aria-pressed={isSelected} className={`${isSelected ? "is-selected" : ""} ${isPast ? "is-past" : ""}`} onClick={() => { setSelectedTodoDay(day); cancelTodoEdit(); }}>
-    <span>{String(day).padStart(2, "0")}</span>
+    <button key={day} type="button" aria-pressed={isSelected} aria-label={`${new Date(`${dateKey}T00:00:00`).toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" })}, ${total} items`} className={`calendar-date ${isSelected ? "is-selected" : ""} ${isToday ? "is-today" : ""} ${isWeekend ? "is-weekend" : ""} ${isPast ? "is-past" : ""}`} onClick={() => { setSelectedTodoDay(day); cancelTodoEdit(); }}>
+    <span>{day}</span>
     <small>{total} item{total === 1 ? "" : "s"}{open ? ` • ${open} open` : ""}{isPast ? " • Read only" : ""}</small>
-    <i aria-hidden="true"><b style={{ width: `${total ? Math.max(14, (total / Math.max(...todoDailyTotals, 1)) * 100) : 0}%` }} /></i>
+    <i className="calendar-dot" aria-hidden="true" style={{ opacity: total ? 1 : 0 }} />
     </button>
     );
     })}
