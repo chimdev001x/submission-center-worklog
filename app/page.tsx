@@ -489,7 +489,6 @@ export default function Home() {
 
             <div className="dashboard-todos-body">
               <div className="dashboard-todos-summary">
-                <p>งานที่ยังเปิดอยู่จะแสดงก่อน โดยเรียงตาม High, Medium และ Low</p>
                 <div className="dashboard-todo-counts" aria-label="To do summary">
                   <span><small>All</small><strong>{todoCounts.total}</strong></span>
                   <span><small>Open</small><strong>{todoCounts.open}</strong></span>
