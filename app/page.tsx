@@ -76,6 +76,9 @@ export default function Home() {
   const [todoPriority, setTodoPriority] = useState<TodoPriority>("Medium");
   const [todoFilter, setTodoFilter] = useState<"all" | "open" | "done">("all");
   const [todoClock, setTodoClock] = useState(() => Date.now());
+  const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
+  const [editingTodoTitle, setEditingTodoTitle] = useState("");
+  const [editingTodoPriority, setEditingTodoPriority] = useState<TodoPriority>("Medium");
 
   const key = monthKey(month);
   const totalDays = daysInMonth(month);
@@ -296,6 +299,27 @@ export default function Home() {
     }]);
     setTodoTitle("");
     setTodoPriority("Medium");
+  };
+
+  const startTodoEdit = (todo: TodoItem) => {
+    if (isSelectedTodoPast) return;
+    setEditingTodoId(todo.id);
+    setEditingTodoTitle(todo.title);
+    setEditingTodoPriority(todo.priority);
+  };
+
+  const cancelTodoEdit = () => {
+    setEditingTodoId(null);
+    setEditingTodoTitle("");
+  };
+
+  const saveTodoEdit = () => {
+    const title = editingTodoTitle.trim();
+    if (!editingTodoId || !title || isSelectedTodoPast) return;
+    setTodos((items) => items.map((item) => item.id === editingTodoId
+      ? { ...item, title, priority: editingTodoPriority }
+      : item));
+    cancelTodoEdit();
   };
 
   const overdueLabel = (todo: TodoItem) => {
@@ -592,7 +616,7 @@ export default function Home() {
                 const total = todoDailyTotals[index];
                 const open = monthlyTodos.filter((todo) => Number(todo.dueDate.slice(-2)) === day && !todo.completed).length;
                 return (
-                  <button key={day} type="button" aria-pressed={isSelected} className={`${isSelected ? "is-selected" : ""} ${isPast ? "is-past" : ""}`} onClick={() => setSelectedTodoDay(day)}>
+                  <button key={day} type="button" aria-pressed={isSelected} className={`${isSelected ? "is-selected" : ""} ${isPast ? "is-past" : ""}`} onClick={() => { setSelectedTodoDay(day); cancelTodoEdit(); }}>
                     <span>{String(day).padStart(2, "0")}</span>
                     <small>{total} item{total === 1 ? "" : "s"}{open ? ` • ${open} open` : ""}{isPast ? " • Read only" : ""}</small>
                     <i aria-hidden="true"><b style={{ width: `${total ? Math.max(14, (total / Math.max(...todoDailyTotals, 1)) * 100) : 0}%` }} /></i>
@@ -643,27 +667,57 @@ export default function Home() {
             {visibleTodos.length ? (
               <ul className="todo-list">
                 {visibleTodos.map((todo) => (
-                  <li key={todo.id} className={todo.completed ? "is-complete" : ""}>
+                  <li key={todo.id} className={`${todo.completed ? "is-complete" : ""} ${editingTodoId === todo.id ? "is-editing" : ""}`}>
                     <label className="todo-check">
-                      <input type="checkbox" checked={todo.completed} disabled={isSelectedTodoPast} onChange={() => {
+                      <input type="checkbox" checked={todo.completed} disabled={isSelectedTodoPast || editingTodoId === todo.id} onChange={() => {
                         if (isSelectedTodoPast) return;
                         setTodos((items) => items.map((item) => item.id === todo.id ? { ...item, completed: !item.completed } : item));
                       }} />
                       <span aria-hidden="true" />
                       <span className="sr-only">Mark {todo.title} as {todo.completed ? "open" : "done"}</span>
                     </label>
-                    <div className="todo-copy">
-                      <strong>{todo.title}</strong>
-                      <div>
-                        <span className={`todo-priority priority-${todo.priority.toLowerCase()}`}>{todo.priority}</span>
-                        <span>{new Date(`${todo.dueDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                        {todo.originalDueDate && <span className="todo-overdue">{overdueLabel(todo)} • moved from {todo.originalDueDate}</span>}
-                      </div>
-                    </div>
-                    <button className="todo-delete" type="button" disabled={isSelectedTodoPast} onClick={() => {
-                      if (isSelectedTodoPast) return;
-                      setTodos((items) => items.filter((item) => item.id !== todo.id));
-                    }} aria-label={`Delete ${todo.title}`}>×</button>
+                    {editingTodoId === todo.id ? (
+                      <form className="todo-edit-form" onSubmit={(event) => { event.preventDefault(); saveTodoEdit(); }}>
+                        <label className="todo-edit-field">
+                          <span>Task name</span>
+                          <input aria-label="Edit task name" value={editingTodoTitle} onChange={(event) => setEditingTodoTitle(event.target.value)} autoFocus />
+                        </label>
+                        <fieldset className="todo-priority-picker todo-edit-priority">
+                          <legend>Priority</legend>
+                          <div>
+                            {TODO_PRIORITIES.map((priority) => (
+                              <label key={priority} className={`priority-${priority.toLowerCase()}`}>
+                                <input type="radio" name={`edit-priority-${todo.id}`} value={priority} checked={editingTodoPriority === priority} onChange={() => setEditingTodoPriority(priority)} />
+                                <strong>{priority}</strong>
+                              </label>
+                            ))}
+                          </div>
+                        </fieldset>
+                        <div className="todo-edit-actions">
+                          <button className="todo-cancel" type="button" onClick={cancelTodoEdit}>Cancel</button>
+                          <button className="todo-save" type="submit" disabled={!editingTodoTitle.trim()}>Save</button>
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        <div className="todo-copy">
+                          <strong>{todo.title}</strong>
+                          <div>
+                            <span className={`todo-priority priority-${todo.priority.toLowerCase()}`}>{todo.priority}</span>
+                            <span>{new Date(`${todo.dueDate}T00:00:00`).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                            {todo.originalDueDate && <span className="todo-overdue">{overdueLabel(todo)} • moved from {todo.originalDueDate}</span>}
+                          </div>
+                        </div>
+                        <div className="todo-row-actions">
+                          <button className="todo-edit-button" type="button" disabled={isSelectedTodoPast} onClick={() => startTodoEdit(todo)}>Edit</button>
+                          <button className="todo-delete" type="button" disabled={isSelectedTodoPast} onClick={() => {
+                            if (isSelectedTodoPast) return;
+                            setTodos((items) => items.filter((item) => item.id !== todo.id));
+                            if (editingTodoId === todo.id) cancelTodoEdit();
+                          }} aria-label={`Delete ${todo.title}`}>×</button>
+                        </div>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>

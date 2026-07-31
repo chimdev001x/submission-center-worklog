@@ -588,8 +588,9 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .todo-filters button.active { background: var(--ink); color: var(--paper); font-weight: 700; }
 .todo-filters button:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; z-index: 1; }
 .todo-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line-strong); }
-.todo-list li { min-height: 76px; display: grid; grid-template-columns: 42px 1fr 40px; align-items: center; gap: 14px; padding: 12px 10px; border-bottom: 1px solid var(--line); background: rgba(255,253,248,.42); }
+.todo-list li { min-height: 76px; display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 14px; padding: 12px 10px; border-bottom: 1px solid var(--line); background: rgba(255,253,248,.42); }
 .todo-list li:hover { background: var(--paper); }
+.todo-list li.is-editing { grid-template-columns: 42px 1fr; }
 .todo-check { display: grid; place-items: center; cursor: pointer; }
 .todo-check input { position: absolute; opacity: 0; }
 .todo-check > span[aria-hidden] { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid var(--line-strong); background: var(--paper); }
@@ -608,10 +609,27 @@ h2 { font-family: var(--font-display), serif; font-size: clamp(25px, 3vw, 38px);
 .priority-high { color: #a13e35; }
 .todo-list li.is-complete .todo-copy > strong { color: var(--muted); text-decoration: line-through; }
 .todo-list li.is-complete { opacity: .65; }
+.todo-list li.is-editing { opacity: 1; }
+.todo-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.todo-edit-button { min-height: 34px; padding: 7px 10px; border: 0; background: transparent; color: var(--sage); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.todo-edit-button:hover { background: var(--sage-soft); }
+.todo-edit-button:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+.todo-edit-button:disabled { cursor: not-allowed; opacity: .25; }
 .todo-delete { width: 34px; height: 34px; border: 0; background: transparent; color: var(--line-strong); font-size: 21px; }
 .todo-delete:hover { color: #9c3f36; }
 .todo-delete:focus-visible { outline: 2px solid #9c3f36; outline-offset: 2px; }
 .todo-delete:disabled { cursor: not-allowed; opacity: .25; }
+.todo-edit-form { min-width: 0; display: grid; grid-template-columns: minmax(180px, 1fr) 250px auto; align-items: end; gap: 10px; }
+.todo-edit-field { min-width: 0; display: grid; gap: 6px; }
+.todo-edit-field > span { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.todo-edit-field > input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--sage); border-radius: 0; background: var(--paper); color: var(--ink); outline: 0; }
+.todo-edit-field > input:focus { box-shadow: 0 0 0 2px var(--sage-soft); }
+.todo-edit-actions { display: flex; gap: 6px; }
+.todo-edit-actions button { min-height: 40px; padding: 8px 12px; font-size: 9px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.todo-cancel { border: 1px solid var(--line); background: var(--paper); color: var(--muted); }
+.todo-save { border: 1px solid var(--ink); background: var(--ink); color: var(--paper); }
+.todo-save:disabled { cursor: not-allowed; opacity: .38; }
+.todo-cancel:focus-visible, .todo-save:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
 .todo-empty { min-height: 270px; display: grid; grid-template-columns: 160px 1fr; align-items: center; gap: 36px; border-block: 1px solid var(--line); }
 .todo-empty > span { color: var(--line-strong); font-family: var(--font-display), serif; font-size: 92px; text-align: center; }
 .todo-empty h3 { margin: 0; font-family: var(--font-display), serif; font-size: 28px; font-weight: 550; }
@@ -818,6 +836,8 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .todo-compose form { grid-template-columns: 1fr 1fr; }
   .todo-title-field { grid-column: 1 / -1; }
   .todo-compose .add-button { grid-column: 1 / -1; }
+  .todo-edit-form { grid-template-columns: 1fr; }
+  .todo-edit-actions { justify-content: flex-end; }
   .todo-empty { grid-template-columns: 1fr; gap: 10px; padding: 36px 0; text-align: center; }
   .todo-empty > span { font-size: 62px; }
 }
@@ -849,6 +869,8 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .todo-compose form { grid-template-columns: 1fr; }
   .todo-title-field,
   .todo-compose .add-button { grid-column: 1; }
+  .todo-edit-form { grid-template-columns: 1fr; }
+  .todo-edit-actions { justify-content: flex-end; }
 }
 
 @media (prefers-reduced-motion: reduce) {
