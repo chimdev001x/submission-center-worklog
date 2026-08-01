@@ -125,7 +125,7 @@ export async function exportExcel(payload: ExportPayload) {
       },
       views: [{ state: "frozen", ySplit: 5 }],
     });
-    sheet.mergeCells("A1:E2");
+    sheet.mergeCells("A1:F2");
     const title = sheet.getCell("A1");
     title.value = "SUBMISSION CENTER - DASHBOARD";
     title.font = { name: "Tahoma", size: 20, bold: true, color: { argb: "FFFDF8" } };
@@ -144,7 +144,7 @@ export async function exportExcel(payload: ExportPayload) {
     });
     sheet.getCell("E4").font = { name: "Tahoma", size: 18, bold: true, color: { argb: "25251F" } };
 
-    sheet.getRow(6).values = ["Status", "Count", "", "Day", "Date", "Work mode", "Items"];
+    sheet.getRow(6).values = ["Status", "Count", "", "Date", "Work mode", "Items"];
     sheet.getRow(6).height = 24;
     sheet.getRow(6).eachCell((cell) => {
       cell.font = { name: "Tahoma", bold: true, color: { argb: "FFFDF8" } };
@@ -167,11 +167,10 @@ export async function exportExcel(payload: ExportPayload) {
 
     overview.daily.forEach((item, index) => {
       const row = 7 + index;
-      sheet.getCell(row, 4).value = item.day;
-      sheet.getCell(row, 5).value = item.date;
-      sheet.getCell(row, 6).value = item.workMode;
-      sheet.getCell(row, 7).value = item.total;
-      for (let column = 4; column <= 7; column += 1) {
+      sheet.getCell(row, 4).value = item.date;
+      sheet.getCell(row, 5).value = item.workMode;
+      sheet.getCell(row, 6).value = item.total;
+      for (let column = 4; column <= 6; column += 1) {
         const cell = sheet.getCell(row, column);
         cell.font = { name: "Tahoma", color: { argb: "25251F" } };
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: index % 2 ? "FFFDF8" : "F6F1E7" } };
@@ -179,9 +178,9 @@ export async function exportExcel(payload: ExportPayload) {
       }
     });
     sheet.columns = [
-      { width: 18 }, { width: 12 }, { width: 3 }, { width: 10 }, { width: 15 }, { width: 17 }, { width: 12 },
+      { width: 18 }, { width: 12 }, { width: 3 }, { width: 15 }, { width: 17 }, { width: 12 },
     ];
-    sheet.printArea = `A1:G${Math.max(14, overview.daily.length + 6)}`;
+    sheet.printArea = `A1:F${Math.max(14, overview.daily.length + 6)}`;
   }
 
   if (payload.includeEntries) {
@@ -198,13 +197,13 @@ export async function exportExcel(payload: ExportPayload) {
       },
       views: [{ state: "frozen", ySplit: 4 }],
     });
-    sheet.mergeCells("A1:I2");
+    sheet.mergeCells("A1:H2");
     const title = sheet.getCell("A1");
     title.value = `WORK ENTRIES - ${payload.period === "month" ? monthName(payload.month) : fileStem(payload).replace("Submission-Center_", "")}`;
     title.font = { name: "Tahoma", size: 19, bold: true, color: { argb: "FFFDF8" } };
     title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "25251F" } };
     title.alignment = { vertical: "middle" };
-    sheet.getRow(4).values = ["Day", "Date", "Work Mode", "No.", "Activity", "Link Plane", "Results", "Status", "Remark"];
+    sheet.getRow(4).values = ["Date", "Work Mode", "No.", "Activity", "Link Plane", "Results", "Status", "Remark"];
     sheet.getRow(4).height = 26;
     sheet.getRow(4).eachCell((cell) => {
       cell.font = { name: "Tahoma", bold: true, color: { argb: "FFFDF8" } };
@@ -213,7 +212,7 @@ export async function exportExcel(payload: ExportPayload) {
     });
     rows.forEach((item, index) => {
       const row = sheet.addRow([
-        item.day, item.date, item.workMode, item.no, item.activity || "-", item.link, item.results, item.status || "-", item.remark,
+        item.date, item.workMode, item.no, item.activity || "-", item.link, item.results, item.status || "-", item.remark,
       ]);
       row.height = 30;
       row.eachCell((cell) => {
@@ -223,26 +222,26 @@ export async function exportExcel(payload: ExportPayload) {
         cell.border = { bottom: { style: "thin", color: { argb: "D9D3C7" } } };
       });
       if (item.link) {
-        row.getCell(6).value = { text: item.link, hyperlink: item.link };
-        row.getCell(6).font = { name: "Tahoma", size: 10, color: { argb: "356D78" }, underline: true };
+        row.getCell(5).value = { text: item.link, hyperlink: item.link };
+        row.getCell(5).font = { name: "Tahoma", size: 10, color: { argb: "356D78" }, underline: true };
       }
       if (item.status && PALETTE[item.status]) {
         const colors = PALETTE[item.status];
-        row.getCell(8).font = { name: "Tahoma", bold: true, color: { argb: colors.fg } };
-        row.getCell(8).fill = { type: "pattern", pattern: "solid", fgColor: { argb: colors.bg } };
+        row.getCell(7).font = { name: "Tahoma", bold: true, color: { argb: colors.fg } };
+        row.getCell(7).fill = { type: "pattern", pattern: "solid", fgColor: { argb: colors.bg } };
       }
     });
     if (!rows.length) {
-      sheet.mergeCells("A5:I7");
+      sheet.mergeCells("A5:H7");
       sheet.getCell("A5").value = "No work entries for this selection.";
       sheet.getCell("A5").alignment = { horizontal: "center", vertical: "middle" };
       sheet.getCell("A5").font = { name: "Tahoma", italic: true, color: { argb: "777568" } };
     }
     sheet.columns = [
-      { width: 8 }, { width: 14 }, { width: 14 }, { width: 8 }, { width: 19 },
-      { width: 37 }, { width: 27 }, { width: 16 }, { width: 29 },
+      { width: 14 }, { width: 14 }, { width: 8 }, { width: 19 },
+      { width: 39 }, { width: 29 }, { width: 16 }, { width: 31 },
     ];
-    sheet.printArea = `A1:I${Math.max(7, rows.length + 4)}`;
+    sheet.printArea = `A1:H${Math.max(7, rows.length + 4)}`;
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
@@ -315,8 +314,8 @@ export async function exportPdf(payload: ExportPayload) {
 
     autoTable(doc, {
       startY: 56,
-      head: [["Day", "Date", "Work mode", "Items"]],
-      body: overview.daily.map((item) => [String(item.day), item.date, item.workMode, String(item.total)]),
+      head: [["Date", "Work mode", "Items"]],
+      body: overview.daily.map((item) => [item.date, item.workMode, String(item.total)]),
       theme: "grid",
       styles: { font: "Tahoma", fontSize: 8, cellPadding: 2.2, overflow: "linebreak" },
       headStyles: { fillColor: "#667461", textColor: "#fffdf8", fontStyle: "normal" },
@@ -332,20 +331,20 @@ export async function exportPdf(payload: ExportPayload) {
     const rows = entryRows(payload);
     autoTable(doc, {
       startY: 28,
-      head: [["Day", "Date", "Mode", "No.", "Activity", "Link Plane", "Results", "Status", "Remark"]],
+      head: [["Date", "Mode", "No.", "Activity", "Link Plane", "Results", "Status", "Remark"]],
       body: rows.length
         ? rows.map((item) => [
-            String(item.day), item.date, item.workMode, String(item.no), item.activity || "-", item.link,
+            item.date, item.workMode, String(item.no), item.activity || "-", item.link,
             item.results, item.status || "-", item.remark,
           ])
-        : [["-", "-", "-", "-", "No work entries for this selection.", "", "", "", ""]],
+        : [["-", "-", "-", "No work entries for this selection.", "", "", "", ""]],
       theme: "grid",
       styles: { font: "Tahoma", fontSize: 6.7, cellPadding: 1.8, overflow: "linebreak", valign: "middle" },
       headStyles: { fillColor: "#667461", textColor: "#fffdf8", fontStyle: "normal", fontSize: 7 },
       alternateRowStyles: { fillColor: "#f6f1e7" },
       columnStyles: {
-        0: { cellWidth: 9 }, 1: { cellWidth: 19 }, 2: { cellWidth: 17 }, 3: { cellWidth: 9 },
-        4: { cellWidth: 24 }, 5: { cellWidth: 54 }, 6: { cellWidth: 42 }, 7: { cellWidth: 21 }, 8: { cellWidth: 64 },
+        0: { cellWidth: 19 }, 1: { cellWidth: 17 }, 2: { cellWidth: 9 }, 3: { cellWidth: 25 },
+        4: { cellWidth: 57 }, 5: { cellWidth: 44 }, 6: { cellWidth: 22 }, 7: { cellWidth: 65 },
       },
       rowPageBreak: "avoid",
       showHead: "everyPage",
