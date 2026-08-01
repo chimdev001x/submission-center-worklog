@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { exportExcel, exportPdf } from "./export-utils";
 import { downloadImportTemplate, ImportedRow, parseImportFile } from "./import-utils";
 import { DashboardView } from "./components/DashboardView";
@@ -53,6 +53,12 @@ const createMonth = (days: number): MonthData =>
 
 const monthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+const latestAvailableDay = (date: Date, today = new Date()) => {
+  const selectedMonth = monthKey(date);
+  const currentMonth = monthKey(today);
+  if (selectedMonth === currentMonth) return Math.min(today.getDate(), daysInMonth(date));
+  return selectedMonth < currentMonth ? daysInMonth(date) : 1;
+};
 const localDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 const todoDates = (todo: TodoItem) => Array.from(new Set([
   todo.dueDate,
@@ -61,12 +67,14 @@ const todoDates = (todo: TodoItem) => Array.from(new Set([
 ]));
 
 export default function Home() {
+  const initialMonth = new Date();
+  const observedDate = useRef(localDateKey(initialMonth));
   const [authReady, setAuthReady] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [view, setView] = useState<View>("dashboard");
-  const [month, setMonth] = useState(() => new Date(2026, 6, 1));
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const [data, setData] = useState<MonthData>(() => createMonth(31));
+  const [month, setMonth] = useState(() => new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1));
+  const [selectedDay, setSelectedDay] = useState<number | null>(() => latestAvailableDay(initialMonth));
+  const [data, setData] = useState<MonthData>(() => createMonth(daysInMonth(initialMonth)));
   const [hydrated, setHydrated] = useState(false);
   const [saved, setSaved] = useState(true);
   const [addCount, setAddCount] = useState("1");
@@ -88,7 +96,7 @@ export default function Home() {
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [todosHydrated, setTodosHydrated] = useState(false);
   const [todoTitle, setTodoTitle] = useState("");
-  const [selectedTodoDay, setSelectedTodoDay] = useState(() => new Date().getDate());
+  const [selectedTodoDay, setSelectedTodoDay] = useState(() => latestAvailableDay(initialMonth));
   const [todoPriority, setTodoPriority] = useState<TodoPriority>("Medium");
   const [todoFilter, setTodoFilter] = useState<"all" | "open" | "done">("all");
   const [todoClock, setTodoClock] = useState(() => Date.now());
@@ -135,7 +143,7 @@ export default function Home() {
       if (cancelled) return;
       const next = remote ?? (stored ? JSON.parse(stored) as MonthData : createMonth(totalDays));
       setData(next);
-      setSelectedDay(null);
+      setSelectedDay(latestAvailableDay(new Date(`${key}-01T00:00:00`)));
       setHydrated(true);
       setSaved(true);
       if (!remote && stored) void saveMonthData(user.id, key, next);
@@ -253,6 +261,18 @@ export default function Home() {
   const todoToday = localDateKey(new Date(todoClock));
   const isSelectedTodoPast = selectedTodoDate < todoToday;
 
+  useEffect(() => {
+    if (observedDate.current === todoToday) return;
+    observedDate.current = todoToday;
+    const today = new Date(`${todoToday}T00:00:00`);
+    const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const latestDay = latestAvailableDay(currentMonth, today);
+    setHydrated(false);
+    setMonth(currentMonth);
+    setSelectedDay(latestDay);
+    setSelectedTodoDay(latestDay);
+  }, [todoToday]);
+
   const resolvedImportRows = useMemo(() => importRows.map((row) => {
     const dateMatchesMonth = row.date ? row.date.slice(0, 7) === key : false;
     const targetDay = importMode === "day" ? importDay : importMode === "dates" ? (dateMatchesMonth ? row.day : null) : row.day;
@@ -306,9 +326,12 @@ export default function Home() {
 
   const changeMonth = (value: string) => {
     const [year, monthNumber] = value.split("-").map(Number);
+    const nextMonth = new Date(year, monthNumber - 1, 1);
+    const latestDay = latestAvailableDay(nextMonth);
     setHydrated(false);
-    setMonth(new Date(year, monthNumber - 1, 1));
-    setSelectedTodoDay(1);
+    setMonth(nextMonth);
+    setSelectedDay(latestDay);
+    setSelectedTodoDay(latestDay);
   };
 
   const addRows = () => {
