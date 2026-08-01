@@ -1,5 +1,5 @@
 export function DayControlView({ model }: { model: any }) {
-  const { monthLabel, key, todoToday, selectedDay, current, updateDay, totalDays, data, dailyTotals, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, removeTask } = model;
+  const { monthLabel, key, todoToday, selectedDay, current, updateDay, totalDays, data, dailyTotals, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, requestRemoveTask } = model;
   const weekdays = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
   const firstWeekday = new Date(`${key}-01T00:00:00`).getDay();
   const calendarCells = Math.ceil((firstWeekday + totalDays) / 7) * 7;
@@ -136,7 +136,7 @@ export function DayControlView({ model }: { model: any }) {
     <td data-label="Results"><input aria-label={`Results row ${index + 1}`} value={task.results} onChange={(event) => updateTask(task.id, "results", event.target.value)} placeholder="Result or evidence" /></td>
     <td data-label="Status"><select aria-label={`Status row ${index + 1}`} className={task.status ? statusClass[task.status] : ""} value={task.status} onChange={(event) => updateTask(task.id, "status", event.target.value)}><option value="">Select status</option>{STATUSES.map((status) => <option key={status}>{status}</option>)}</select></td>
     <td data-label="Remark"><input aria-label={`Remark row ${index + 1}`} value={task.remark} onChange={(event) => updateTask(task.id, "remark", event.target.value)} placeholder="Add a note" /></td>
-    <td className="row-action"><button className="remove-button" type="button" aria-label={`Remove row ${index + 1}`} onClick={() => removeTask(task.id)} disabled={current.tasks.length === 1}>×</button></td>
+    <td className="row-action"><button className="remove-button" type="button" aria-label={`Remove row ${index + 1}`} onClick={() => requestRemoveTask(task.id, index + 1)} disabled={current.tasks.length === 1}>×</button></td>
     </tr>
     ))}
     </tbody>

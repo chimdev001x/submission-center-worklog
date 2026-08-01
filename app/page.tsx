@@ -10,6 +10,7 @@ import { AppHeader } from "./components/AppHeader";
 import { AuthScreen } from "./components/AuthScreen";
 import { AdminSettingsView } from "./components/AdminSettingsView";
 import { ThemeSettingsView } from "./components/ThemeSettingsView";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { AuthUser, initializeAuth, loadMonthData, loadTodoData, logout, recordActivity, saveMonthData, saveTodoData } from "./auth-utils";
 import { applyTheme, DEFAULT_THEME } from "./theme-utils";
 
@@ -30,6 +31,7 @@ type DayRecord = { enabled: boolean; workMode: WorkMode; tasks: Task[] };
 type MonthData = Record<number, DayRecord>;
 type TodoPriority = (typeof TODO_PRIORITIES)[number];
 type TodoItem = { id: string; title: string; dueDate: string; originalDueDate?: string; historyDates?: string[]; carriedAt?: number; priority: TodoPriority; completed: boolean; completedAt?: number; createdAt: number };
+type PendingDelete = { kind: "task" | "todo"; id: string; label: string; cancelEdit?: boolean };
 
 const statusClass: Record<string, string> = {
   Open: "status-open",
@@ -104,6 +106,7 @@ export default function Home() {
   const [editingTodoTitle, setEditingTodoTitle] = useState("");
   const [editingTodoPriority, setEditingTodoPriority] = useState<TodoPriority>("Medium");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
 
   useEffect(() => {
     initializeAuth().then((sessionUser) => {
@@ -319,9 +322,25 @@ export default function Home() {
     });
   };
 
-  const removeTask = (id: string) => {
+  const requestRemoveTask = (id: string, rowNumber: number) => {
     if (!selectedDay || !current) return;
-    updateDay(selectedDay, { tasks: current.tasks.filter((task) => task.id !== id) });
+    const task = current.tasks.find((item) => item.id === id);
+    const detail = task?.activity || task?.link || `Row ${rowNumber}`;
+    setPendingDelete({ kind: "task", id, label: detail });
+  };
+
+  const requestRemoveTodo = (id: string, title: string, cancelEdit: boolean) =>
+    setPendingDelete({ kind: "todo", id, label: title, cancelEdit });
+
+  const confirmRemoveItem = () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === "task") {
+      if (selectedDay && current) updateDay(selectedDay, { tasks: current.tasks.filter((task) => task.id !== pendingDelete.id) });
+    } else {
+      setTodos((items) => items.filter((item) => item.id !== pendingDelete.id));
+      if (pendingDelete.cancelEdit) cancelTodoEdit();
+    }
+    setPendingDelete(null);
   };
 
   const changeMonth = (value: string) => {
@@ -506,13 +525,22 @@ export default function Home() {
       {view === "dashboard" ? (
         <DashboardView model={{ monthLabel, counts, STATUSES, statusClass, setView, dailyTotals, data, setSelectedDay, maxDaily, todoCounts, dashboardTodos, monthlyTodos, overdueLabel, todoOnly: !isAdmin }} />
       ) : isAdmin && view === "days" ? (
-        <DayControlView model={{ monthLabel, key, todoToday, selectedDay, current, updateDay, totalDays, data, dailyTotals, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, removeTask }} />
+        <DayControlView model={{ monthLabel, key, todoToday, selectedDay, current, updateDay, totalDays, data, dailyTotals, setSelectedDay, fullDate, WORK_MODES, addCount, setAddCount, addRows, ACTIVITIES, updateTask, statusClass, STATUSES, requestRemoveTask }} />
       ) : isAdmin && view === "settings" ? (
         <AdminSettingsView user={user} />
       ) : user.level >= 2 && view === "theme" ? (
         <ThemeSettingsView user={user} onThemeChange={(theme) => setUser((currentUser) => currentUser ? { ...currentUser, theme } : currentUser)} />
       ) : (
-        <TodoView model={{ monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, todoDailyOpenTotals, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel }} />
+        <TodoView model={{ monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, todoDailyOpenTotals, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, requestRemoveTodo, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel }} />
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Delete this item?"
+          message={`“${pendingDelete.label}” will be permanently removed. This action cannot be undone.`}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={confirmRemoveItem}
+        />
       )}
 
       {isAdmin && importOpen && (

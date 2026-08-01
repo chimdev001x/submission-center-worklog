@@ -1,5 +1,5 @@
 export function TodoView({ model }: { model: any }) {
-  const { monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, todoDailyOpenTotals, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel } = model;
+  const { monthLabel, todoCounts, totalDays, selectedTodoDay, key, todoToday, todoDailyTotals, todoDailyOpenTotals, setSelectedTodoDay, cancelTodoEdit, isSelectedTodoPast, selectedTodoDate, todoTitle, setTodoTitle, TODO_PRIORITIES, todoPriority, setTodoPriority, addTodo, todoFilter, setTodoFilter, visibleTodos, editingTodoId, setTodos, requestRemoveTodo, saveTodoEdit, editingTodoTitle, setEditingTodoTitle, editingTodoPriority, setEditingTodoPriority, startTodoEdit, overdueLabel } = model;
   const weekdays = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
   const firstWeekday = new Date(`${key}-01T00:00:00`).getDay();
   const calendarCells = Math.ceil((firstWeekday + totalDays) / 7) * 7;
@@ -139,8 +139,7 @@ export function TodoView({ model }: { model: any }) {
     <button className="todo-edit-button" type="button" disabled={isHistorical || isSelectedTodoPast} onClick={() => startTodoEdit(todo)}>Edit</button>
     <button className="todo-delete" type="button" disabled={isHistorical || isSelectedTodoPast} onClick={() => {
     if (isHistorical || isSelectedTodoPast) return;
-    setTodos((items) => items.filter((item) => item.id !== todo.id));
-    if (editingTodoId === todo.id) cancelTodoEdit();
+    requestRemoveTodo(todo.id, todo.title, editingTodoId === todo.id);
     }} aria-label={`Delete ${todo.title}`}>×</button>
     </div>
     </>

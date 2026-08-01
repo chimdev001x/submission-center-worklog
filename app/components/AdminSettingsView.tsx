@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { AdminOverview, AdminUser, AuthUser, deleteAdminUser, loadAdminOverview, loadAdminUsers, updateAdminUserLevel, updateAdminUserLimit, UserLevel } from "../auth-utils";
 import { AdminThemeStore } from "./AdminThemeStore";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 export function AdminSettingsView({ user }: { user: AuthUser }) {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
@@ -12,6 +13,7 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
   const [updatingLevelId, setUpdatingLevelId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [pendingUserDelete, setPendingUserDelete] = useState<AdminUser | null>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -57,7 +59,6 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
   };
 
   const removeUser = async (target: AdminUser) => {
-    if (!window.confirm(`ลบบัญชี ${target.displayName} (${target.email}) และข้อมูลทั้งหมดหรือไม่?`)) return;
     setDeletingId(target.id);
     setError("");
     setNotice("");
@@ -69,6 +70,7 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
       setError(cause instanceof Error ? cause.message : "ไม่สามารถลบผู้ใช้ได้");
     } finally {
       setDeletingId(null);
+      setPendingUserDelete(null);
     }
   };
 
@@ -123,13 +125,23 @@ export function AdminSettingsView({ user }: { user: AuthUser }) {
                 <td>{new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(account.createdAt))}</td>
                 <td>{account.lastActiveAt ? new Intl.DateTimeFormat("th-TH", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(account.lastActiveAt)) : "ยังไม่เคยใช้งาน"}</td>
                 <td>{formatUsage(account.totalUsageSeconds)}</td>
-                <td><button type="button" className="admin-delete" disabled={account.id === user.id || deletingId === account.id} onClick={() => void removeUser(account)}>{account.id === user.id ? "Current admin" : deletingId === account.id ? "Deleting…" : "Delete"}</button></td>
+                <td><button type="button" className="admin-delete" disabled={account.id === user.id || deletingId === account.id} onClick={() => setPendingUserDelete(account)}>{account.id === user.id ? "Current admin" : deletingId === account.id ? "Deleting…" : "Delete"}</button></td>
               </tr>
             ))}</tbody>
           </table>
         </div>
       )}
       <AdminThemeStore userId={user.id} />
+      {pendingUserDelete && (
+        <ConfirmDialog
+          title="Delete this account?"
+          message={`${pendingUserDelete.displayName} (${pendingUserDelete.email}) and all account data will be permanently removed.`}
+          confirmLabel="Delete account"
+          busy={deletingId === pendingUserDelete.id}
+          onCancel={() => setPendingUserDelete(null)}
+          onConfirm={() => void removeUser(pendingUserDelete)}
+        />
+      )}
     </section>
   );
 }
