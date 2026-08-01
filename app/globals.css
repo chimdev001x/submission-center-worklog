@@ -25,13 +25,10 @@ body {
   font-family: var(--font-body), sans-serif;
 }
 html[data-store-theme="sanrio-line-atelier"] body { background-image: linear-gradient(rgba(255,249,241,.89),rgba(255,249,241,.89)),url('/themes/sanrio-line-atelier.png'); background-size: auto,cover; background-attachment: fixed; }
-html[data-store-theme="sanrio-line-atelier"] .topbar,html[data-store-theme="sanrio-line-atelier"] section { backdrop-filter: blur(2px); }
 html[data-store-theme="sanrio-line-atelier"] .brand-mark { border-radius: 50%; color: #a7656c; }
 html[data-store-theme="hello-kitty-line-diary"] body { background-image: linear-gradient(rgba(255,249,242,.89),rgba(255,249,242,.89)),url('/themes/hello-kitty-line-diary.png'); background-size: auto,cover; background-attachment: fixed; }
-html[data-store-theme="hello-kitty-line-diary"] .topbar,html[data-store-theme="hello-kitty-line-diary"] section { backdrop-filter: blur(2px); }
 html[data-store-theme="hello-kitty-line-diary"] .brand-mark { border-radius: 50%; color: #c95e66; }
 html[data-store-theme="cute-shark-line-cove"] body { background-image: linear-gradient(rgba(250,250,241,.89),rgba(250,250,241,.89)),url('/themes/cute-shark-line-cove.png'); background-size: auto,cover; background-attachment: fixed; }
-html[data-store-theme="cute-shark-line-cove"] .topbar,html[data-store-theme="cute-shark-line-cove"] section { backdrop-filter: blur(2px); }
 html[data-store-theme="cute-shark-line-cove"] .brand-mark { border-radius: 50%; color: #174f7e; }
 button, input, select { font: inherit; }
 button, select { cursor: pointer; }
@@ -910,6 +907,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .app-shell { padding: 0 16px 22px; }
   .topbar {
     position: relative;
+    z-index: 100;
     min-height: 0;
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-rows: 64px 52px;
@@ -928,6 +926,8 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
   .primary-nav,
   .secondary-nav { display: none; }
   .mobile-menu-trigger {
+    position: relative;
+    z-index: 102;
     grid-row: 1;
     grid-column: 2;
     width: 44px;
@@ -939,6 +939,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
     padding: 10px 8px;
     border: 0;
     background: transparent;
+    touch-action: manipulation;
   }
   .mobile-menu-trigger > span { width: 25px; height: 1px; display: block; background: var(--ink); transition: transform 160ms ease, opacity 160ms ease; }
   .mobile-menu-trigger.is-open > span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
@@ -948,7 +949,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
     position: fixed;
     top: 24px;
     right: 16px;
-    z-index: 31;
+    z-index: 102;
     width: 44px;
     height: 44px;
     padding: 11px;
@@ -961,7 +962,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
     position: fixed;
     top: 0;
     right: 0;
-    z-index: 30;
+    z-index: 101;
     width: 50vw;
     height: 100dvh;
     display: block;
@@ -970,6 +971,8 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
     background: var(--paper);
     box-shadow: var(--shadow);
     animation: mobile-menu-slide-in 180ms ease-out both;
+    pointer-events: auto;
+    touch-action: manipulation;
   }
   .mobile-nav-panel nav { display: grid; }
   .mobile-nav-panel nav > button {
@@ -986,6 +989,7 @@ footer { display: flex; justify-content: space-between; gap: 20px; padding-top: 
     font-size: 12px;
     font-weight: 650;
     text-align: left;
+    touch-action: manipulation;
   }
   .mobile-nav-panel nav > button::after {
     content: "→";
